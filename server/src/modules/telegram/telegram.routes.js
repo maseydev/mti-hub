@@ -1,9 +1,9 @@
 const { Router } = require('express');
 const ctrl = require('./telegram.controller');
-const { verifyToken, requireAdmin } = require('../auth/auth.middleware');
+const { verifyToken, loadUser, requireAdmin } = require('../auth/auth.middleware');
 
 const router = Router();
-router.use(verifyToken);
+router.use(verifyToken, loadUser);
 
 // Admin: global finance reminder settings + bot management
 router.get('/settings', requireAdmin, ctrl.getSettings);

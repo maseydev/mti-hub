@@ -24,6 +24,8 @@ const mySettingsSchema = z.object({
   financeNotificationsEnabled: z.boolean().optional(),
 });
 
+const ADMIN_ROLES = ['ADMIN', 'OWNER'];
+
 const TOKEN_PREFIX = 'enc:v1:';
 
 const getTokenKey = () => crypto.createHash('sha256').update(TELEGRAM_TOKEN_SECRET).digest();
@@ -136,12 +138,16 @@ const getMySettings = async (userId) => {
   return user;
 };
 
-const updateMySettings = async (userId, data) => {
+const updateMySettings = async (userId, data, role) => {
   const parsed = mySettingsSchema.safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
+
+  const updateData = { ...parsed.data };
+  if (!ADMIN_ROLES.includes(role)) delete updateData.financeNotificationsEnabled;
+
   return prisma.user.update({
     where: { id: userId },
-    data: parsed.data,
+    data: updateData,
     select: { telegramChatId: true, taskNotificationsEnabled: true, financeNotificationsEnabled: true },
   });
 };

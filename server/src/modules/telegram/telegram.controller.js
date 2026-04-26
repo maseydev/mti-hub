@@ -20,7 +20,7 @@ const test = async (req, res) => {
 
 // User: personal telegram settings
 const getMySettings = async (req, res) => res.json({ data: await svc.getMySettings(req.userId) });
-const updateMySettings = async (req, res) => res.json({ data: await svc.updateMySettings(req.userId, req.body) });
+const updateMySettings = async (req, res) => res.json({ data: await svc.updateMySettings(req.userId, req.body, req.userRole) });
 const testMyTask = async (req, res) => {
   const result = await svc.testMyTask(req.userId);
   res.json({ data: { ok: true, result } });
