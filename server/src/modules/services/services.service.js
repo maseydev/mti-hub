@@ -27,11 +27,7 @@ const include = {
 
 const buildWhere = (filters) => {
   const where = {};
-  if (filters.status === 'NOT_ARCHIVED') {
-    where.status = { not: 'ARCHIVED' };
-  } else if (filters.status) {
-    where.status = filters.status;
-  }
+  if (filters.status) where.status = filters.status;
   if (filters.type) where.type = filters.type;
   if (filters.clientId) where.clientId = filters.clientId;
   if (filters.projectId) where.projectId = filters.projectId;

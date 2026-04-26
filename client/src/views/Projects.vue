@@ -7,7 +7,6 @@
           <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
         <select v-model="filters.status" class="ui-select w-48" @change="load">
-          <option value="NOT_ARCHIVED">Без архива</option>
           <option value="">Все статусы</option>
           <option value="ACTIVE">Активен</option>
           <option value="PAUSED">Приостановлен</option>
@@ -108,7 +107,7 @@ const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
 const editingId = ref(null)
-const filters = reactive({ clientId: '', status: 'NOT_ARCHIVED' })
+const filters = reactive({ clientId: '', status: 'ACTIVE' })
 
 const toDateInput = (d) => d ? new Date(d).toISOString().slice(0, 10) : ''
 const empty = () => ({ clientId: '', name: '', description: '', status: 'ACTIVE', startDate: '', endDate: '', repositoryUrl: '', productionUrl: '', notes: '' })

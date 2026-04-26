@@ -3,7 +3,6 @@
     <div class="ui-toolbar">
       <div class="ui-toolbar-left">
         <select v-model="filters.status" class="ui-select w-44" @change="load">
-          <option value="NOT_ARCHIVED">Без архива</option>
           <option value="">Все статусы</option>
           <option value="ACTIVE">Активен</option>
           <option value="PAUSED">Приостановлен</option>
@@ -106,7 +105,7 @@ const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
 const editingId = ref(null)
-const filters = reactive({ status: 'NOT_ARCHIVED', search: '' })
+const filters = reactive({ status: 'ACTIVE', search: '' })
 
 const emptyForm = () => ({ name: '', contactName: '', email: '', phone: '', telegram: '', companyName: '', taxId: '', notes: '', status: 'ACTIVE' })
 const form = ref(emptyForm())

@@ -16,11 +16,7 @@ const clientSchema = z.object({
 
 const getAll = async (filters = {}) => {
   const where = {};
-  if (filters.status === 'NOT_ARCHIVED') {
-    where.status = { not: 'ARCHIVED' };
-  } else if (filters.status) {
-    where.status = filters.status;
-  }
+  if (filters.status) where.status = filters.status;
   if (filters.search) {
     where.OR = [
       { name: { contains: filters.search, mode: 'insensitive' } },
