@@ -22,7 +22,11 @@ const include = {
 const getAll = async (filters = {}) => {
   const where = {};
   if (filters.clientId) where.clientId = filters.clientId;
-  if (filters.status) where.status = filters.status;
+  if (filters.status === 'NOT_ARCHIVED') {
+    where.status = { not: 'ARCHIVED' };
+  } else if (filters.status) {
+    where.status = filters.status;
+  }
   return prisma.project.findMany({ where, orderBy: { createdAt: 'desc' }, include });
 };
 

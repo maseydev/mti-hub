@@ -3,7 +3,8 @@
     <div class="ui-toolbar">
       <div class="ui-toolbar-left">
         <select v-model="filters.status" class="ui-select w-40" @change="load">
-          <option value="">Статус</option>
+          <option value="NOT_ARCHIVED">Без архива</option>
+          <option value="">Все статусы</option>
           <option value="ACTIVE">Активна</option>
           <option value="PAUSED">Пауза</option>
           <option value="CANCELLED">Отменена</option>
@@ -137,7 +138,7 @@ const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
 const editingId = ref(null)
-const filters = reactive({ status: '', type: '', clientId: '', dueSoon: false, overdue: false })
+const filters = reactive({ status: 'NOT_ARCHIVED', type: '', clientId: '', dueSoon: false, overdue: false })
 
 const toDateInput = (d) => d ? new Date(d).toISOString().slice(0, 10) : ''
 const empty = () => ({ clientId: '', projectId: null, title: '', description: '', type: 'HOSTING', billingCycle: 'MONTHLY', amount: 0, currency: 'RUB', nextDueDate: '', autoCreateIncome: true, status: 'ACTIVE', notes: '' })
