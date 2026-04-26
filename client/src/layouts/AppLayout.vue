@@ -1,18 +1,22 @@
 <template>
-  <div class="app-layout">
+  <div class="min-h-screen bg-slate-950 text-slate-100 lg:flex">
     <AppSidebar />
-    <div class="main-wrapper">
-      <header class="app-header">
-        <div class="header-left">
-          <h2 class="page-title">{{ pageTitle }}</h2>
-          <span class="page-kicker">Billing workspace</span>
-        </div>
-        <div class="header-right">
-          <span class="user-name">{{ auth.user?.name }}</span>
-          <el-button class="logout-btn" link @click="handleLogout">Выйти</el-button>
+    <div class="min-w-0 flex-1">
+      <header class="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/85 backdrop-blur">
+        <div class="flex min-h-16 items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <div class="min-w-0">
+            <h1 class="truncate text-lg font-semibold text-white">{{ pageTitle }}</h1>
+            <p class="mt-0.5 ui-eyebrow">Billing workspace</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="hidden max-w-48 truncate text-sm text-slate-400 sm:block">{{ auth.user?.name }}</span>
+            <button class="ui-button ui-button-ghost" type="button" @click="handleLogout">
+              Выйти
+            </button>
+          </div>
         </div>
       </header>
-      <main class="main-content">
+      <main class="px-4 py-6 sm:px-6 lg:px-8">
         <router-view />
       </main>
     </div>
@@ -33,16 +37,19 @@ const titles = {
   '/dashboard': 'Дашборд',
   '/clients': 'Клиенты',
   '/projects': 'Проекты',
-  '/services': 'Услуги и продления',
-  '/billing': 'Счета к оплате',
+  '/services': 'Регулярные услуги',
+  '/billing': 'Ожидаемые платежи',
   '/transactions': 'Транзакции',
   '/categories': 'Категории',
-  '/accounts': 'Счета и кошельки',
+  '/accounts': 'Кошельки',
+  '/tasks': 'Задачи',
+  '/team': 'Команда',
   '/telegram': 'Telegram',
 }
 
 const pageTitle = computed(() => {
   if (route.path.startsWith('/clients/') && route.params.id) return 'Карточка клиента'
+  if (route.path.startsWith('/projects/') && route.params.id) return 'Проект'
   return titles[route.path] || 'MTI-HUB'
 })
 
@@ -55,80 +62,3 @@ onMounted(() => {
   if (!auth.user) auth.fetchMe()
 })
 </script>
-
-<style scoped>
-.app-layout {
-  display: flex;
-  min-height: 100vh;
-  background: var(--app-bg);
-  color: var(--app-text);
-}
-.main-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.app-header {
-  min-height: 68px;
-  background: rgba(11, 13, 16, 0.84);
-  border-bottom: 1px solid var(--app-border);
-  backdrop-filter: blur(16px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 28px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-.header-left {
-  min-width: 0;
-}
-.page-title {
-  font-size: 20px;
-  line-height: 1.2;
-  font-weight: 750;
-  color: var(--app-text);
-  margin: 0;
-}
-.page-kicker {
-  display: block;
-  margin-top: 4px;
-  color: var(--app-text-muted);
-  font-size: 12px;
-  text-transform: uppercase;
-}
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.user-name {
-  max-width: 220px;
-  overflow: hidden;
-  color: var(--app-text-soft);
-  font-size: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.logout-btn {
-  color: var(--app-text-muted) !important;
-}
-.main-content {
-  flex: 1;
-  padding: 28px;
-  overflow-y: auto;
-}
-@media (max-width: 900px) {
-  .app-layout {
-    flex-direction: column;
-  }
-  .app-header {
-    padding: 14px 16px;
-  }
-  .main-content {
-    padding: 16px;
-  }
-}
-</style>

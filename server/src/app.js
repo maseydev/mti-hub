@@ -12,6 +12,8 @@ const categoriesRoutes = require('./modules/categories/categories.routes');
 const accountsRoutes = require('./modules/accounts/accounts.routes');
 const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
 const telegramRoutes = require('./modules/telegram/telegram.routes');
+const teamRoutes = require('./modules/team/team.routes');
+const tasksRoutes = require('./modules/tasks/tasks.routes');
 
 const app = express();
 
@@ -31,6 +33,8 @@ app.use('/api/categories', categoriesRoutes);
 app.use('/api/accounts', accountsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/telegram', telegramRoutes);
+app.use('/api/team', teamRoutes);
+app.use('/api/tasks', tasksRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {

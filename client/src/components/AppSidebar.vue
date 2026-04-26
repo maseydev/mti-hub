@@ -1,149 +1,75 @@
 <template>
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-mark">M</span>
+  <aside class="border-r border-slate-800 bg-slate-950 lg:min-h-screen lg:w-72 lg:flex-none">
+    <div class="flex h-16 items-center gap-3 border-b border-slate-800 px-5">
+      <div class="grid size-9 place-items-center rounded-lg bg-sky-500 text-sm font-black text-slate-950">M</div>
       <div>
-        <span class="logo-text">MTI-HUB</span>
-        <span class="logo-subtitle">studio finance</span>
+        <div class="text-sm font-bold text-white">MTI-HUB</div>
+        <div class="ui-eyebrow">Studio finance</div>
       </div>
     </div>
-    <el-menu
-      :default-active="route.path"
-      router
-      class="sidebar-menu"
-    >
-      <el-menu-item index="/dashboard">
-        <el-icon><Odometer /></el-icon>
-        <span>Дашборд</span>
-      </el-menu-item>
-      <el-menu-item index="/clients">
-        <el-icon><User /></el-icon>
-        <span>Клиенты</span>
-      </el-menu-item>
-      <el-menu-item index="/projects">
-        <el-icon><Files /></el-icon>
-        <span>Проекты</span>
-      </el-menu-item>
-      <el-menu-item index="/services">
-        <el-icon><Refresh /></el-icon>
-        <span>Услуги и продления</span>
-      </el-menu-item>
-      <el-menu-item index="/billing">
-        <el-icon><CreditCard /></el-icon>
-        <span>Счета к оплате</span>
-      </el-menu-item>
-      <el-menu-item index="/transactions">
-        <el-icon><Money /></el-icon>
-        <span>Транзакции</span>
-      </el-menu-item>
-      <el-divider />
-      <el-menu-item index="/categories">
-        <el-icon><Collection /></el-icon>
-        <span>Категории</span>
-      </el-menu-item>
-      <el-menu-item index="/accounts">
-        <el-icon><Wallet /></el-icon>
-        <span>Счета и кошельки</span>
-      </el-menu-item>
-      <el-menu-item index="/telegram">
-        <el-icon><ChatDotRound /></el-icon>
-        <span>Telegram</span>
-      </el-menu-item>
-    </el-menu>
+
+    <nav class="flex gap-1 overflow-x-auto p-3 lg:block lg:space-y-1">
+      <RouterLink
+        v-for="item in primaryItems"
+        :key="item.to"
+        :to="item.to"
+        class="flex flex-none items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition lg:flex-auto"
+        :class="isActive(item.to) ? 'bg-sky-500 text-slate-950' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-100'"
+      >
+        <component :is="item.icon" class="size-4" />
+        <span>{{ item.label }}</span>
+      </RouterLink>
+
+      <div class="mx-3 hidden border-t border-slate-800 py-2 lg:block" />
+
+      <RouterLink
+        v-for="item in secondaryItems"
+        :key="item.to"
+        :to="item.to"
+        class="flex flex-none items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition lg:flex-auto"
+        :class="isActive(item.to) ? 'bg-sky-500 text-slate-950' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-100'"
+      >
+        <component :is="item.icon" class="size-4" />
+        <span>{{ item.label }}</span>
+      </RouterLink>
+    </nav>
   </aside>
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router'
-const route = useRoute()
-</script>
+import { RouterLink, useRoute } from 'vue-router'
+import {
+  Bot,
+  BriefcaseBusiness,
+  CheckSquare,
+  CreditCard,
+  FolderKanban,
+  Gauge,
+  Landmark,
+  Layers3,
+  RefreshCw,
+  Tags,
+  Users,
+} from 'lucide-vue-next'
 
-<style scoped>
-.sidebar {
-  width: 264px;
-  min-height: 100vh;
-  background: #0f1217;
-  border-right: 1px solid var(--app-border);
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-}
-.sidebar-logo {
-  min-height: 68px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--app-border);
-}
-.logo-mark {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border: 1px solid rgba(53, 194, 164, 0.42);
-  border-radius: 8px;
-  background: var(--app-accent-soft);
-  color: var(--app-accent-strong);
-  font-weight: 800;
-}
-.logo-text {
-  display: block;
-  color: var(--app-text);
-  font-size: 17px;
-  line-height: 1.1;
-  font-weight: 800;
-}
-.logo-subtitle {
-  display: block;
-  margin-top: 3px;
-  color: var(--app-text-muted);
-  font-size: 11px;
-  text-transform: uppercase;
-}
-.sidebar-menu {
-  background: transparent !important;
-  border-right: none !important;
-  flex: 1;
-  padding: 12px;
-}
-:deep(.el-menu-item) {
-  height: 42px;
-  margin: 3px 0;
-  border-radius: 8px;
-  color: var(--app-text-muted) !important;
-  font-weight: 650;
-}
-:deep(.el-menu-item .el-icon) {
-  color: #7d8a9b;
-}
-:deep(.el-menu-item:hover),
-:deep(.el-menu-item.is-active) {
-  background: var(--app-accent-soft) !important;
-  color: var(--app-text) !important;
-}
-:deep(.el-menu-item.is-active .el-icon) {
-  color: var(--app-accent-strong);
-}
-:deep(.el-divider) {
-  border-color: var(--app-border) !important;
-  margin: 10px 0;
-}
-@media (max-width: 900px) {
-  .sidebar {
-    width: 100%;
-    min-height: auto;
-  }
-  .sidebar-menu {
-    display: flex;
-    overflow-x: auto;
-    padding: 10px;
-  }
-  :deep(.el-menu-item) {
-    flex: 0 0 auto;
-  }
-  :deep(.el-divider) {
-    display: none;
-  }
-}
-</style>
+const route = useRoute()
+
+const primaryItems = [
+  { to: '/dashboard', label: 'Дашборд', icon: Gauge },
+  { to: '/clients', label: 'Клиенты', icon: BriefcaseBusiness },
+  { to: '/projects', label: 'Проекты', icon: FolderKanban },
+  { to: '/services', label: 'Регулярные услуги', icon: RefreshCw },
+  { to: '/billing', label: 'Ожидаемые платежи', icon: CreditCard },
+  { to: '/tasks', label: 'Задачи', icon: CheckSquare },
+  { to: '/transactions', label: 'Транзакции', icon: Layers3 },
+]
+
+const secondaryItems = [
+  { to: '/categories', label: 'Категории', icon: Tags },
+  { to: '/accounts', label: 'Кошельки', icon: Landmark },
+  { to: '/team', label: 'Команда', icon: Users },
+  { to: '/telegram', label: 'Telegram', icon: Bot },
+]
+
+const isActive = (path) => route.path === path || (path !== '/dashboard' && route.path.startsWith(`${path}/`))
+</script>

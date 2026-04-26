@@ -5,7 +5,7 @@ const prisma = require('../../config/prisma');
 const { JWT_SECRET, JWT_ACCESS_TTL } = require('../../config/env');
 const { AppError, NotFoundError, UnauthorizedError } = require('../../utils/errors');
 
-const USER_SELECT = { id: true, email: true, name: true, role: true, locale: true, currency: true, createdAt: true };
+const USER_SELECT = { id: true, email: true, name: true, role: true, position: true, telegram: true, isActive: true, locale: true, currency: true, createdAt: true };
 
 const registerSchema = z.object({
   email: z.string().email('Некорректный email'),
@@ -42,6 +42,8 @@ const login = async (data) => {
 
   const valid = await argon2.verify(user.passwordHash, password);
   if (!valid) throw new UnauthorizedError('Неверный email или пароль');
+
+  if (!user.isActive) throw new UnauthorizedError('Аккаунт деактивирован');
 
   const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_ACCESS_TTL });
   const { passwordHash: _, ...userSafe } = user;

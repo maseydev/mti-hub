@@ -11,8 +11,8 @@ async function main() {
   const passwordHash = await argon2.hash('admin123');
   await prisma.user.upsert({
     where: { email: 'admin@studio.ru' },
-    update: {},
-    create: { email: 'admin@studio.ru', passwordHash, name: 'Администратор', role: 'OWNER' },
+    update: { role: 'OWNER', isActive: true },
+    create: { email: 'admin@studio.ru', passwordHash, name: 'Администратор', role: 'OWNER', isActive: true },
   });
   console.log('[seed] User: admin@studio.ru / admin123');
 

@@ -1,101 +1,78 @@
 <template>
-  <div>
-    <el-row :gutter="20">
-      <el-col :span="12">
-        <el-card>
-          <template #header>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span>Категории доходов</span>
-              <el-button size="small" type="primary" :icon="Plus" @click="openCreate('INCOME')">Добавить</el-button>
-            </div>
-          </template>
-          <el-table :data="income" v-loading="loading" size="small">
-            <el-table-column label="Цвет" width="60">
-              <template #default="{ row }">
-                <span v-if="row.color" :style="`display:inline-block;width:16px;height:16px;border-radius:50%;background:${row.color}`" />
-              </template>
-            </el-table-column>
-            <el-table-column prop="name" label="Название" min-width="150" />
-            <el-table-column label="" width="80" align="center">
-              <template #default="{ row }">
-                <el-button link :icon="Edit" @click="openEdit(row)" />
-                <el-button v-if="!row.isSystem" link :icon="Delete" style="color:#f56c6c" @click="remove(row.id)" />
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card>
-          <template #header>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span>Категории расходов</span>
-              <el-button size="small" type="primary" :icon="Plus" @click="openCreate('EXPENSE')">Добавить</el-button>
-            </div>
-          </template>
-          <el-table :data="expense" v-loading="loading" size="small">
-            <el-table-column label="Цвет" width="60">
-              <template #default="{ row }">
-                <span v-if="row.color" :style="`display:inline-block;width:16px;height:16px;border-radius:50%;background:${row.color}`" />
-              </template>
-            </el-table-column>
-            <el-table-column prop="name" label="Название" min-width="150" />
-            <el-table-column label="" width="80" align="center">
-              <template #default="{ row }">
-                <el-button link :icon="Edit" @click="openEdit(row)" />
-                <el-button v-if="!row.isSystem" link :icon="Delete" style="color:#f56c6c" @click="remove(row.id)" />
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-col>
-    </el-row>
+  <div class="grid gap-5 xl:grid-cols-2">
+    <section v-for="group in groups" :key="group.type" class="ui-card">
+      <div class="ui-card-header flex items-center justify-between">
+        <span>{{ group.title }}</span>
+        <button class="ui-button ui-button-primary py-1.5 text-xs" type="button" @click="openCreate(group.type)">
+          <Plus class="size-4" /> Добавить
+        </button>
+      </div>
+      <div class="ui-table-scroll">
+        <table class="ui-table">
+          <thead><tr><th>Цвет</th><th>Название</th><th class="text-right">Действия</th></tr></thead>
+          <tbody>
+            <tr v-for="row in group.items" :key="row.id">
+              <td><span v-if="row.color" class="inline-block size-4 rounded-full" :style="{ backgroundColor: row.color }" /></td>
+              <td class="font-medium text-slate-100">{{ row.name }}</td>
+              <td>
+                <div class="flex justify-end gap-1">
+                  <button class="ui-button ui-button-ghost px-2" type="button" @click="openEdit(row)"><Pencil class="size-4" /></button>
+                  <button v-if="!row.isSystem" class="ui-button ui-button-danger px-2" type="button" @click="remove(row.id)"><Trash2 class="size-4" /></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? 'Редактировать категорию' : 'Новая категория'" width="400px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-        <el-form-item label="Название *" prop="name">
-          <el-input v-model="form.name" />
-        </el-form-item>
-        <el-form-item label="Тип *" prop="type">
-          <el-radio-group v-model="form.type">
-            <el-radio-button value="INCOME">Доход</el-radio-button>
-            <el-radio-button value="EXPENSE">Расход</el-radio-button>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="Цвет">
-          <el-color-picker v-model="form.color" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">Отмена</el-button>
-        <el-button type="primary" :loading="saving" @click="save">Сохранить</el-button>
-      </template>
-    </el-dialog>
+    <div v-if="dialogVisible" class="ui-modal-backdrop" @click.self="dialogVisible = false">
+      <section class="ui-modal max-w-md">
+        <header class="ui-modal-header">
+          <h2 class="ui-modal-title">{{ editingId ? 'Редактировать категорию' : 'Новая категория' }}</h2>
+          <button class="ui-button ui-button-ghost px-2" type="button" @click="dialogVisible = false"><X class="size-4" /></button>
+        </header>
+        <div class="ui-modal-body space-y-4">
+          <label><span class="ui-label">Название *</span><input v-model="form.name" class="ui-input" /></label>
+          <label>
+            <span class="ui-label">Тип *</span>
+            <select v-model="form.type" class="ui-select">
+              <option value="INCOME">Доход</option>
+              <option value="EXPENSE">Расход</option>
+            </select>
+          </label>
+          <label><span class="ui-label">Цвет</span><input v-model="form.color" class="h-10 w-20 rounded-md border border-slate-700 bg-slate-950 p-1" type="color" /></label>
+        </div>
+        <footer class="ui-modal-footer">
+          <button class="ui-button" type="button" @click="dialogVisible = false">Отмена</button>
+          <button class="ui-button ui-button-primary" type="button" :disabled="saving" @click="save">{{ saving ? 'Сохраняем...' : 'Сохранить' }}</button>
+        </footer>
+      </section>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { computed, onMounted, ref } from 'vue'
+import { Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import { categoriesApi } from '@/api/categories'
+import { confirmAction, notify } from '@/utils/notify'
 
 const cats = ref([])
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
 const editingId = ref(null)
-const formRef = ref()
 
 const income = computed(() => cats.value.filter(c => c.type === 'INCOME'))
 const expense = computed(() => cats.value.filter(c => c.type === 'EXPENSE'))
+const groups = computed(() => [
+  { type: 'INCOME', title: 'Категории доходов', items: income.value },
+  { type: 'EXPENSE', title: 'Категории расходов', items: expense.value },
+])
 
-const empty = (type = 'INCOME') => ({ name: '', type, color: '' })
+const empty = (type = 'INCOME') => ({ name: '', type, color: '#38bdf8' })
 const form = ref(empty())
-const rules = {
-  name: [{ required: true, message: 'Обязательное поле', trigger: 'blur' }],
-  type: [{ required: true }],
-}
 
 const load = async () => {
   loading.value = true
@@ -104,23 +81,24 @@ const load = async () => {
 }
 
 const openCreate = (type) => { editingId.value = null; form.value = empty(type); dialogVisible.value = true }
-const openEdit = (row) => { editingId.value = row.id; form.value = { name: row.name, type: row.type, color: row.color || '' }; dialogVisible.value = true }
+const openEdit = (row) => { editingId.value = row.id; form.value = { name: row.name, type: row.type, color: row.color || '#38bdf8' }; dialogVisible.value = true }
 
 const save = async () => {
-  await formRef.value.validate()
+  if (!form.value.name.trim()) return notify.error('Укажите название категории')
   saving.value = true
   try {
     editingId.value ? await categoriesApi.update(editingId.value, form.value) : await categoriesApi.create(form.value)
-    ElMessage.success(editingId.value ? 'Категория обновлена' : 'Категория добавлена')
-    dialogVisible.value = false; load()
-  } catch (err) { ElMessage.error(err.response?.data?.error || 'Ошибка') }
+    notify.success(editingId.value ? 'Категория обновлена' : 'Категория добавлена')
+    dialogVisible.value = false
+    load()
+  } catch (err) { notify.error(err.response?.data?.error || 'Ошибка') }
   finally { saving.value = false }
 }
 
 const remove = async (id) => {
-  await ElMessageBox.confirm('Удалить категорию?', 'Подтверждение', { type: 'warning' })
-  try { await categoriesApi.remove(id); ElMessage.success('Удалено'); load() }
-  catch (err) { ElMessage.error(err.response?.data?.error || 'Ошибка') }
+  if (!await confirmAction('Удалить категорию?')) return
+  try { await categoriesApi.remove(id); notify.success('Удалено'); load() }
+  catch (err) { notify.error(err.response?.data?.error || 'Ошибка') }
 }
 
 onMounted(load)

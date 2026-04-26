@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../../config/env');
-const { UnauthorizedError } = require('../../utils/errors');
+const { UnauthorizedError, ForbiddenError } = require('../../utils/errors');
+const prisma = require('../../config/prisma');
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -17,4 +18,18 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-module.exports = { verifyToken };
+const requireRoles = (...roles) => async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { role: true, isActive: true },
+    });
+    if (!user || !user.isActive) return next(new UnauthorizedError('Аккаунт деактивирован'));
+    if (!roles.includes(user.role)) return next(new ForbiddenError('Недостаточно прав'));
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { verifyToken, requireRoles };

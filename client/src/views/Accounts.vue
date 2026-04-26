@@ -1,83 +1,76 @@
 <template>
   <div>
-    <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
-      <el-button type="primary" :icon="Plus" @click="openCreate">Добавить счёт</el-button>
+    <div class="mb-4 flex justify-end">
+      <button class="ui-button ui-button-primary" type="button" @click="openCreate"><Plus class="size-4" /> Добавить кошелёк</button>
     </div>
 
-    <el-table :data="accounts" v-loading="loading">
-      <el-table-column prop="name" label="Название" min-width="160" />
-      <el-table-column label="Тип" width="120">
-        <template #default="{ row }">{{ typeLabel(row.type) }}</template>
-      </el-table-column>
-      <el-table-column prop="currency" label="Валюта" width="80" />
-      <el-table-column label="Нач. баланс" width="140">
-        <template #default="{ row }">{{ fmt(row.openingBalance) }}</template>
-      </el-table-column>
-      <el-table-column label="Текущий баланс" width="160">
-        <template #default="{ row }">
-          <span :style="row.balance >= 0 ? 'color:#67c23a;font-weight:600' : 'color:#f56c6c;font-weight:600'">{{ fmt(row.balance) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="Активен" width="90" align="center">
-        <template #default="{ row }">
-          <el-tag :type="row.isActive ? 'success' : 'info'" size="small">{{ row.isActive ? 'Да' : 'Нет' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="Действия" width="100" align="center">
-        <template #default="{ row }">
-          <el-button link :icon="Edit" @click="openEdit(row)" />
-          <el-popconfirm title="Удалить счёт?" @confirm="remove(row.id)">
-            <template #reference><el-button link :icon="Delete" style="color:#f56c6c" /></template>
-          </el-popconfirm>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="ui-table-wrap">
+      <div class="ui-table-scroll">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Название</th>
+              <th>Тип</th>
+              <th>Валюта</th>
+              <th>Нач. баланс</th>
+              <th>Текущий баланс</th>
+              <th>Активен</th>
+              <th class="text-right">Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in accounts" :key="row.id">
+              <td class="font-medium text-slate-100">{{ row.name }}</td>
+              <td>{{ typeLabel(row.type) }}</td>
+              <td>{{ row.currency }}</td>
+              <td>{{ fmt(row.openingBalance) }}</td>
+              <td class="ui-number" :class="row.balance >= 0 ? 'font-semibold metric-positive' : 'font-semibold metric-negative'">{{ fmt(row.balance) }}</td>
+              <td><span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold ring-1" :class="row.isActive ? 'bg-teal-400/10 text-teal-300 ring-teal-400/20' : 'bg-slate-400/10 text-slate-300 ring-slate-400/20'">{{ row.isActive ? 'Да' : 'Нет' }}</span></td>
+              <td>
+                <div class="flex justify-end gap-1">
+                  <button class="ui-button ui-button-ghost px-2" type="button" @click="openEdit(row)"><Pencil class="size-4" /></button>
+                  <button class="ui-button ui-button-danger px-2" type="button" @click="remove(row.id)"><Trash2 class="size-4" /></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-if="!accounts.length && !loading" class="ui-empty m-5">Кошельки не найдены</div>
+    </div>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? 'Редактировать счёт' : 'Новый счёт'" width="440px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-        <el-row :gutter="16">
-          <el-col :span="14">
-            <el-form-item label="Название *" prop="name">
-              <el-input v-model="form.name" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="10">
-            <el-form-item label="Тип *" prop="type">
-              <el-select v-model="form.type" style="width:100%">
-                <el-option v-for="[v,l] in TYPE_OPTIONS" :key="v" :value="v" :label="l" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="10">
-            <el-form-item label="Валюта">
-              <el-input v-model="form.currency" maxlength="3" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="14">
-            <el-form-item label="Начальный баланс">
-              <el-input-number v-model="form.openingBalance" :precision="2" style="width:100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Активен">
-              <el-switch v-model="form.isActive" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">Отмена</el-button>
-        <el-button type="primary" :loading="saving" @click="save">Сохранить</el-button>
-      </template>
-    </el-dialog>
+    <div v-if="dialogVisible" class="ui-modal-backdrop" @click.self="dialogVisible = false">
+      <section class="ui-modal max-w-lg">
+        <header class="ui-modal-header">
+          <h2 class="ui-modal-title">{{ editingId ? 'Редактировать кошелёк' : 'Новый кошелёк' }}</h2>
+          <button class="ui-button ui-button-ghost px-2" type="button" @click="dialogVisible = false"><X class="size-4" /></button>
+        </header>
+        <div class="ui-modal-body grid gap-4 sm:grid-cols-2">
+          <label class="sm:col-span-2"><span class="ui-label">Название *</span><input v-model="form.name" class="ui-input" /></label>
+          <label>
+            <span class="ui-label">Тип *</span>
+            <select v-model="form.type" class="ui-select">
+              <option v-for="[v,l] in TYPE_OPTIONS" :key="v" :value="v">{{ l }}</option>
+            </select>
+          </label>
+          <label><span class="ui-label">Валюта</span><input v-model="form.currency" class="ui-input" maxlength="3" /></label>
+          <label><span class="ui-label">Начальный баланс</span><input v-model.number="form.openingBalance" class="ui-input" step="0.01" type="number" /></label>
+          <label class="flex items-end gap-2 pb-2 text-sm text-slate-300"><input v-model="form.isActive" type="checkbox" /> Активен</label>
+        </div>
+        <footer class="ui-modal-footer">
+          <button class="ui-button" type="button" @click="dialogVisible = false">Отмена</button>
+          <button class="ui-button ui-button-primary" type="button" :disabled="saving" @click="save">{{ saving ? 'Сохраняем...' : 'Сохранить' }}</button>
+        </footer>
+      </section>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { onMounted, ref } from 'vue'
+import { Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import { accountsApi } from '@/api/accounts'
+import { confirmAction, notify } from '@/utils/notify'
 
 const TYPE_OPTIONS = [['CASH','Наличные'],['BANK','Банк'],['CARD','Карта'],['CRYPTO','Крипто'],['OTHER','Прочее']]
 const TYPE_MAP = Object.fromEntries(TYPE_OPTIONS)
@@ -88,15 +81,9 @@ const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
 const editingId = ref(null)
-const formRef = ref()
 
 const empty = () => ({ name: '', type: 'BANK', currency: 'RUB', openingBalance: 0, isActive: true })
 const form = ref(empty())
-const rules = {
-  name: [{ required: true, message: 'Обязательное поле', trigger: 'blur' }],
-  type: [{ required: true }],
-}
-
 const fmt = (v) => Number(v || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₽'
 
 const load = async () => {
@@ -109,19 +96,21 @@ const openCreate = () => { editingId.value = null; form.value = empty(); dialogV
 const openEdit = (row) => { editingId.value = row.id; form.value = { ...empty(), ...row }; dialogVisible.value = true }
 
 const save = async () => {
-  await formRef.value.validate()
+  if (!form.value.name.trim()) return notify.error('Укажите название кошелька')
   saving.value = true
   try {
     editingId.value ? await accountsApi.update(editingId.value, form.value) : await accountsApi.create(form.value)
-    ElMessage.success(editingId.value ? 'Счёт обновлён' : 'Счёт добавлен')
-    dialogVisible.value = false; load()
-  } catch (err) { ElMessage.error(err.response?.data?.error || 'Ошибка') }
+    notify.success(editingId.value ? 'Кошелёк обновлён' : 'Кошелёк добавлен')
+    dialogVisible.value = false
+    load()
+  } catch (err) { notify.error(err.response?.data?.error || 'Ошибка') }
   finally { saving.value = false }
 }
 
 const remove = async (id) => {
-  try { await accountsApi.remove(id); ElMessage.success('Удалено'); load() }
-  catch (err) { ElMessage.error(err.response?.data?.error || 'Ошибка') }
+  if (!await confirmAction('Удалить кошелёк?')) return
+  try { await accountsApi.remove(id); notify.success('Удалено'); load() }
+  catch (err) { notify.error(err.response?.data?.error || 'Ошибка') }
 }
 
 onMounted(load)

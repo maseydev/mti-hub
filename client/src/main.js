@@ -1,25 +1,27 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import 'element-plus/dist/index.css'
-import 'element-plus/theme-chalk/dark/css-vars.css'
-import ru from 'element-plus/es/locale/lang/ru'
 
 import App from './App.vue'
 import router from './router'
+import '@fontsource/golos-text/cyrillic-400.css'
+import '@fontsource/golos-text/cyrillic-500.css'
+import '@fontsource/golos-text/cyrillic-600.css'
+import '@fontsource/golos-text/cyrillic-700.css'
+import '@fontsource/golos-text/latin-400.css'
+import '@fontsource/golos-text/latin-500.css'
+import '@fontsource/golos-text/latin-600.css'
+import '@fontsource/golos-text/latin-700.css'
+import '@fontsource/ibm-plex-mono/cyrillic-400.css'
+import '@fontsource/ibm-plex-mono/cyrillic-500.css'
+import '@fontsource/ibm-plex-mono/cyrillic-600.css'
+import '@fontsource/ibm-plex-mono/latin-400.css'
+import '@fontsource/ibm-plex-mono/latin-500.css'
+import '@fontsource/ibm-plex-mono/latin-600.css'
 import './styles/theme.css'
-
-document.documentElement.classList.add('dark')
 
 const app = createApp(App)
 
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, component)
-}
-
 app.use(createPinia())
 app.use(router)
-app.use(ElementPlus, { locale: ru })
 
 app.mount('#app')
