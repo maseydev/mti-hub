@@ -15,4 +15,9 @@ const myTasks = async (req, res) => {
   res.json({ data: { summary: taskSummary, list } });
 };
 
-module.exports = { summary, upcomingPayments, overdue, monthlyChart, teamTasks, myTasks };
+const adminTasks = async (req, res) => {
+  const data = await svc.getAdminTaskDashboard(req.userId);
+  res.json({ data });
+};
+
+module.exports = { summary, upcomingPayments, overdue, monthlyChart, teamTasks, myTasks, adminTasks };

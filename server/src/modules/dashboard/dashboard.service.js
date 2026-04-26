@@ -125,4 +125,34 @@ const getTaskList = async (userId = null) => {
   });
 };
 
-module.exports = { getSummary, getUpcomingPayments, getOverdue, getMonthlyChart, getTaskSummary, getTaskList };
+const getAdminTaskDashboard = async (userId) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const [myOpen, myDueToday, myOverdue, teamOpen, teamOverdue, teamList] = await Promise.all([
+    prisma.task.count({ where: { assigneeId: userId, status: { in: ['TODO', 'IN_PROGRESS'] } } }),
+    prisma.task.count({ where: { assigneeId: userId, status: { notIn: ['DONE', 'CANCELLED'] }, dueDate: { gte: today, lt: tomorrow } } }),
+    prisma.task.count({ where: { assigneeId: userId, status: { notIn: ['DONE', 'CANCELLED'] }, dueDate: { lt: today } } }),
+    prisma.task.count({ where: { status: { in: ['TODO', 'IN_PROGRESS'] } } }),
+    prisma.task.count({ where: { status: { notIn: ['DONE', 'CANCELLED'] }, dueDate: { lt: today } } }),
+    prisma.task.findMany({
+      where: { status: { notIn: ['DONE', 'CANCELLED'] } },
+      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
+      take: 15,
+      include: {
+        project: { select: { id: true, name: true } },
+        assignee: { select: { id: true, name: true } },
+      },
+    }),
+  ]);
+
+  return {
+    my: { open: myOpen, dueToday: myDueToday, overdue: myOverdue },
+    team: { open: teamOpen, overdue: teamOverdue },
+    teamList,
+  };
+};
+
+module.exports = { getSummary, getUpcomingPayments, getOverdue, getMonthlyChart, getTaskSummary, getTaskList, getAdminTaskDashboard };
