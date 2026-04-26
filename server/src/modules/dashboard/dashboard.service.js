@@ -96,4 +96,33 @@ const getMonthlyChart = async () => {
   return data;
 };
 
-module.exports = { getSummary, getUpcomingPayments, getOverdue, getMonthlyChart };
+const getTaskSummary = async (userId = null) => {
+  const where = {};
+  if (userId) where.assigneeId = userId;
+
+  const [todo, inProgress, done, overdue] = await Promise.all([
+    prisma.task.count({ where: { ...where, status: 'TODO' } }),
+    prisma.task.count({ where: { ...where, status: 'IN_PROGRESS' } }),
+    prisma.task.count({ where: { ...where, status: 'DONE' } }),
+    prisma.task.count({ where: { ...where, status: { notIn: ['DONE', 'CANCELLED'] }, dueDate: { lt: new Date() } } }),
+  ]);
+
+  return { todo, inProgress, done, overdue };
+};
+
+const getTaskList = async (userId = null) => {
+  const where = { status: { notIn: ['DONE', 'CANCELLED'] } };
+  if (userId) where.assigneeId = userId;
+
+  return prisma.task.findMany({
+    where,
+    orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
+    take: 20,
+    include: {
+      project: { select: { id: true, name: true } },
+      assignee: { select: { id: true, name: true } },
+    },
+  });
+};
+
+module.exports = { getSummary, getUpcomingPayments, getOverdue, getMonthlyChart, getTaskSummary, getTaskList };

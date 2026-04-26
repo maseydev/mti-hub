@@ -1,6 +1,6 @@
 const { z } = require('zod');
 const prisma = require('../../config/prisma');
-const { NotFoundError, AppError } = require('../../utils/errors');
+const { NotFoundError, AppError, ForbiddenError } = require('../../utils/errors');
 
 const STATUSES = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'];
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'];
@@ -39,11 +39,17 @@ const updateSchema = z.object({
 
 const coerceDate = (v) => (v === '' || v == null ? null : new Date(v));
 
-const getAll = async (filters = {}) => {
+const getAll = async (filters = {}, ctx = {}) => {
   const where = {};
   if (filters.projectId) where.projectId = filters.projectId;
-  if (filters.assigneeId) where.assigneeId = filters.assigneeId;
   if (filters.priority) where.priority = filters.priority;
+
+  // MEMBER always sees only their own tasks
+  if (ctx.role === 'MEMBER') {
+    where.assigneeId = ctx.userId;
+  } else if (filters.assigneeId) {
+    where.assigneeId = filters.assigneeId;
+  }
 
   if (filters.overdue === 'true') {
     const now = new Date();
@@ -118,9 +124,13 @@ const update = async (id, data) => {
   });
 };
 
-const updateStatus = async (id, status) => {
+const updateStatus = async (id, status, ctx = {}) => {
   if (!STATUSES.includes(status)) throw new AppError('Неверный статус', 422);
   const task = await getById(id);
+
+  if (ctx.role === 'MEMBER' && task.assigneeId !== ctx.userId) {
+    throw new ForbiddenError('Недостаточно прав');
+  }
 
   let completedAt = task.completedAt;
   if (status === 'DONE') {

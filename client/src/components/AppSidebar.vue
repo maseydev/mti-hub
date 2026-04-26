@@ -10,7 +10,7 @@
 
     <nav class="flex gap-1 overflow-x-auto p-3 lg:block lg:space-y-1">
       <RouterLink
-        v-for="item in primaryItems"
+        v-for="item in visiblePrimary"
         :key="item.to"
         :to="item.to"
         class="flex flex-none items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition lg:flex-auto"
@@ -23,7 +23,7 @@
       <div class="mx-3 hidden border-t border-slate-800 py-2 lg:block" />
 
       <RouterLink
-        v-for="item in secondaryItems"
+        v-for="item in visibleSecondary"
         :key="item.to"
         :to="item.to"
         class="flex flex-none items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition lg:flex-auto"
@@ -37,6 +37,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import {
   Bot,
@@ -51,25 +52,32 @@ import {
   Tags,
   Users,
 } from 'lucide-vue-next'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const auth = useAuthStore()
 
 const primaryItems = [
-  { to: '/dashboard', label: 'Дашборд', icon: Gauge },
-  { to: '/clients', label: 'Клиенты', icon: BriefcaseBusiness },
-  { to: '/projects', label: 'Проекты', icon: FolderKanban },
-  { to: '/services', label: 'Регулярные услуги', icon: RefreshCw },
-  { to: '/billing', label: 'Ожидаемые платежи', icon: CreditCard },
-  { to: '/tasks', label: 'Задачи', icon: CheckSquare },
-  { to: '/transactions', label: 'Транзакции', icon: Layers3 },
+  { to: '/dashboard', label: 'Дашборд', icon: Gauge, roles: null },
+  { to: '/clients', label: 'Клиенты', icon: BriefcaseBusiness, roles: ['ADMIN', 'OWNER', 'MANAGER'] },
+  { to: '/projects', label: 'Проекты', icon: FolderKanban, roles: ['ADMIN', 'OWNER', 'MANAGER'] },
+  { to: '/services', label: 'Регулярные услуги', icon: RefreshCw, roles: ['ADMIN', 'OWNER'] },
+  { to: '/billing', label: 'Ожидаемые платежи', icon: CreditCard, roles: ['ADMIN', 'OWNER'] },
+  { to: '/tasks', label: 'Задачи', icon: CheckSquare, roles: null },
+  { to: '/transactions', label: 'Транзакции', icon: Layers3, roles: ['ADMIN', 'OWNER'] },
 ]
 
 const secondaryItems = [
-  { to: '/categories', label: 'Категории', icon: Tags },
-  { to: '/accounts', label: 'Кошельки', icon: Landmark },
-  { to: '/team', label: 'Команда', icon: Users },
-  { to: '/telegram', label: 'Telegram', icon: Bot },
+  { to: '/categories', label: 'Категории', icon: Tags, roles: ['ADMIN', 'OWNER'] },
+  { to: '/accounts', label: 'Кошельки', icon: Landmark, roles: ['ADMIN', 'OWNER'] },
+  { to: '/team', label: 'Команда', icon: Users, roles: ['ADMIN', 'OWNER'] },
+  { to: '/telegram', label: 'Telegram', icon: Bot, roles: null },
 ]
+
+const canSee = (item) => !item.roles || item.roles.includes(auth.user?.role)
+
+const visiblePrimary = computed(() => primaryItems.filter(canSee))
+const visibleSecondary = computed(() => secondaryItems.filter(canSee))
 
 const isActive = (path) => route.path === path || (path !== '/dashboard' && route.path.startsWith(`${path}/`))
 </script>

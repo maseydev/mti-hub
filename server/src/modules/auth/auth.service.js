@@ -5,7 +5,7 @@ const prisma = require('../../config/prisma');
 const { JWT_SECRET, JWT_ACCESS_TTL } = require('../../config/env');
 const { AppError, NotFoundError, UnauthorizedError } = require('../../utils/errors');
 
-const USER_SELECT = { id: true, email: true, name: true, role: true, position: true, telegram: true, isActive: true, locale: true, currency: true, createdAt: true };
+const USER_SELECT = { id: true, email: true, name: true, role: true, position: true, telegram: true, isActive: true, telegramChatId: true, taskNotificationsEnabled: true, financeNotificationsEnabled: true, locale: true, currency: true, createdAt: true };
 
 const registerSchema = z.object({
   email: z.string().email('Некорректный email'),

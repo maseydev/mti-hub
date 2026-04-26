@@ -1,7 +1,9 @@
 const svc = require('./tasks.service');
 
+const ctx = (req) => ({ userId: req.userId, role: req.userRole });
+
 const getAll = async (req, res) => {
-  const data = await svc.getAll(req.query);
+  const data = await svc.getAll(req.query, ctx(req));
   res.json({ data });
 };
 
@@ -21,7 +23,7 @@ const update = async (req, res) => {
 };
 
 const updateStatus = async (req, res) => {
-  const data = await svc.updateStatus(req.params.id, req.body.status);
+  const data = await svc.updateStatus(req.params.id, req.body.status, ctx(req));
   res.json({ data });
 };
 

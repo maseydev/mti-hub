@@ -1,9 +1,9 @@
 const { Router } = require('express');
 const ctrl = require('./accounts.controller');
-const { verifyToken } = require('../auth/auth.middleware');
+const { verifyToken, requireAdmin } = require('../auth/auth.middleware');
 
 const router = Router();
-router.use(verifyToken);
+router.use(verifyToken, requireAdmin);
 
 router.get('/', ctrl.getAll);
 router.post('/', ctrl.create);

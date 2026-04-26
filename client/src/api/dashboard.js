@@ -4,4 +4,6 @@ export const dashboardApi = {
   getUpcomingPayments: () => api.get('/dashboard/upcoming-payments'),
   getOverdue: () => api.get('/dashboard/overdue'),
   getMonthlyChart: () => api.get('/dashboard/monthly-chart'),
+  getTeamTasks: () => api.get('/dashboard/team-tasks'),
+  getMyTasks: () => api.get('/dashboard/my-tasks'),
 }

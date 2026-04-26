@@ -96,6 +96,11 @@ enum TaskPriority {
   HIGH
 }
 
+enum TelegramBotType {
+  FINANCE
+  TASK
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -105,10 +110,13 @@ model User {
   position     String?
   telegram     String?
   isActive     Boolean  @default(true)
-  locale        String   @default("ru")
-  currency      String   @default("RUB")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  telegramChatId              String?
+  taskNotificationsEnabled    Boolean  @default(true)
+  financeNotificationsEnabled Boolean  @default(false)
+  locale                      String   @default("ru")
+  currency                    String   @default("RUB")
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
 
   assignedTasks Task[]   @relation("TaskAssignee")
   createdTasks  Task[]   @relation("TaskCreator")
@@ -277,6 +285,16 @@ model NotificationLog {
 
   service     Service?     @relation(fields: [serviceId], references: [id])
   billingItem BillingItem? @relation(fields: [billingItemId], references: [id])
+}
+
+model TelegramBotSettings {
+  id          String          @id @default(cuid())
+  type        TelegramBotType @unique
+  botToken    String          @default("")
+  botUsername String?
+  isEnabled   Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 model Task {

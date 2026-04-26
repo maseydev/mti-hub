@@ -1,9 +1,9 @@
 const { Router } = require('express');
 const ctrl = require('./billing.controller');
-const { verifyToken } = require('../auth/auth.middleware');
+const { verifyToken, requireAdmin } = require('../auth/auth.middleware');
 
 const router = Router();
-router.use(verifyToken);
+router.use(verifyToken, requireAdmin);
 
 router.get('/items', ctrl.getItems);
 router.post('/items', ctrl.createItem);

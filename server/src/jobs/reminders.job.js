@@ -4,8 +4,6 @@ const telegramSvc = require('../modules/telegram/telegram.service');
 const { formatDateRu } = require('../utils/dates');
 const { formatAmount } = require('../utils/money');
 
-const buildKey = (type, billingItemId) => `${type}:${billingItemId}`;
-
 const wasAlreadySent = async (reminderType, billingItemId) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -13,25 +11,47 @@ const wasAlreadySent = async (reminderType, billingItemId) => {
   tomorrow.setDate(tomorrow.getDate() + 1);
 
   const log = await prisma.notificationLog.findFirst({
-    where: {
-      reminderType,
-      billingItemId,
-      sentAt: { gte: today, lt: tomorrow },
-      status: 'SENT',
-    },
+    where: { reminderType, billingItemId, sentAt: { gte: today, lt: tomorrow }, status: 'SENT' },
   });
   return !!log;
 };
 
 const logNotification = async (reminderType, billingItemId, status, errorMessage = null) => {
-  await prisma.notificationLog.create({
-    data: { reminderType, billingItemId, status, errorMessage },
+  await prisma.notificationLog.create({ data: { reminderType, billingItemId, status, errorMessage } });
+};
+
+const getFinanceRecipients = async () => {
+  const settings = await prisma.telegramSettings.findFirst();
+  const chatIds = new Set();
+
+  // Global chatId from legacy settings
+  if (settings?.chatId) chatIds.add(settings.chatId);
+
+  // Per-user chatIds for users with finance notifications enabled
+  const users = await prisma.user.findMany({
+    where: { isActive: true, financeNotificationsEnabled: true, telegramChatId: { not: null } },
+    select: { telegramChatId: true },
   });
+  for (const u of users) if (u.telegramChatId) chatIds.add(u.telegramChatId);
+
+  return { settings, chatIds: [...chatIds] };
+};
+
+const broadcastFinance = async (chatIds, text, billingItemId, reminderType) => {
+  for (const chatId of chatIds) {
+    try {
+      await telegramSvc.sendMessage(chatId, text, 'FINANCE');
+      await logNotification(reminderType, billingItemId, 'SENT');
+      return; // log once per item
+    } catch (err) {
+      await logNotification(reminderType, billingItemId, 'FAILED', err.message);
+    }
+  }
 };
 
 const runReminders = async () => {
-  const settings = await prisma.telegramSettings.findFirst();
-  if (!settings || !settings.isEnabled || !settings.chatId) return;
+  const { settings, chatIds } = await getFinanceRecipients();
+  if (!settings || !settings.isEnabled || chatIds.length === 0) return;
 
   const daysBefore = Array.isArray(settings.reminderDaysBefore) ? settings.reminderDaysBefore : [7, 3, 1, 0];
 
@@ -45,10 +65,7 @@ const runReminders = async () => {
     targetEnd.setHours(23, 59, 59, 999);
 
     const items = await prisma.billingItem.findMany({
-      where: {
-        dueDate: { gte: targetDate, lte: targetEnd },
-        status: { in: ['PLANNED', 'DUE'] },
-      },
+      where: { dueDate: { gte: targetDate, lte: targetEnd }, status: { in: ['PLANNED', 'DUE'] } },
       include: { client: { select: { name: true } } },
     });
 
@@ -57,13 +74,7 @@ const runReminders = async () => {
       if (await wasAlreadySent(type, item.id)) continue;
 
       const text = `🔔 Напоминание: клиент <b>${item.client?.name || '—'}</b> должен оплатить «${item.title}» до ${formatDateRu(item.dueDate)}. Сумма: ${formatAmount(item.amount, item.currency)}.`;
-
-      try {
-        await telegramSvc.sendMessage(settings.chatId, text);
-        await logNotification(type, item.id, 'SENT');
-      } catch (err) {
-        await logNotification(type, item.id, 'FAILED', err.message);
-      }
+      await broadcastFinance(chatIds, text, item.id, type);
     }
   }
 
@@ -78,19 +89,12 @@ const runReminders = async () => {
       if (await wasAlreadySent(type, item.id)) continue;
 
       const text = `🚨 Просрочка: клиент <b>${item.client?.name || '—'}</b> не оплатил «${item.title}». Дата оплаты была ${formatDateRu(item.dueDate)}. Сумма: ${formatAmount(item.amount, item.currency)}.`;
-
-      try {
-        await telegramSvc.sendMessage(settings.chatId, text);
-        await logNotification(type, item.id, 'SENT');
-      } catch (err) {
-        await logNotification(type, item.id, 'FAILED', err.message);
-      }
+      await broadcastFinance(chatIds, text, item.id, type);
     }
   }
 };
 
 const start = () => {
-  // Daily at 09:00
   cron.schedule('0 9 * * *', async () => {
     console.log('[reminders.job] Running...');
     try {

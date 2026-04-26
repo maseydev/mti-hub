@@ -11,8 +11,8 @@ async function main() {
   const passwordHash = await argon2.hash('admin123');
   await prisma.user.upsert({
     where: { email: 'admin@studio.ru' },
-    update: { role: 'OWNER', isActive: true },
-    create: { email: 'admin@studio.ru', passwordHash, name: 'Администратор', role: 'OWNER', isActive: true },
+    update: { role: 'ADMIN', isActive: true },
+    create: { email: 'admin@studio.ru', passwordHash, name: 'Администратор', role: 'ADMIN', isActive: true },
   });
   console.log('[seed] User: admin@studio.ru / admin123');
 
@@ -135,6 +135,15 @@ async function main() {
     update: {},
     create: { id: 'default-telegram', isEnabled: false, reminderDaysBefore: [7, 3, 1, 0], overdueReminderEnabled: true },
   });
+
+  // Telegram bot settings stubs
+  for (const type of ['FINANCE', 'TASK']) {
+    await prisma.telegramBotSettings.upsert({
+      where: { type },
+      update: {},
+      create: { type, botToken: '', isEnabled: false },
+    });
+  }
 
   console.log('[seed] Done ✓');
 }

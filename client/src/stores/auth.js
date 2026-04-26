@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { authApi } from '@/api/auth'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -33,5 +33,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { token, user, login, logout, fetchMe }
+  const isAdmin = computed(() => ['ADMIN', 'OWNER'].includes(user.value?.role))
+  const isManager = computed(() => user.value?.role === 'MANAGER')
+  const isMember = computed(() => user.value?.role === 'MEMBER')
+  const isAdminOrManager = computed(() => ['ADMIN', 'OWNER', 'MANAGER'].includes(user.value?.role))
+
+  return { token, user, login, logout, fetchMe, isAdmin, isManager, isMember, isAdminOrManager }
 })

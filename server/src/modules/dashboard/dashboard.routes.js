@@ -1,13 +1,16 @@
 const { Router } = require('express');
 const ctrl = require('./dashboard.controller');
-const { verifyToken } = require('../auth/auth.middleware');
+const { verifyToken, loadUser, requireAdmin, requireManagerOrAbove } = require('../auth/auth.middleware');
 
 const router = Router();
-router.use(verifyToken);
+router.use(verifyToken, loadUser);
 
-router.get('/summary', ctrl.summary);
-router.get('/upcoming-payments', ctrl.upcomingPayments);
-router.get('/overdue', ctrl.overdue);
-router.get('/monthly-chart', ctrl.monthlyChart);
+router.get('/summary', requireAdmin, ctrl.summary);
+router.get('/upcoming-payments', requireAdmin, ctrl.upcomingPayments);
+router.get('/overdue', requireAdmin, ctrl.overdue);
+router.get('/monthly-chart', requireAdmin, ctrl.monthlyChart);
+
+router.get('/team-tasks', requireManagerOrAbove, ctrl.teamTasks);
+router.get('/my-tasks', ctrl.myTasks);
 
 module.exports = router;

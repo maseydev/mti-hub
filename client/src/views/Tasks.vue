@@ -2,11 +2,11 @@
   <div>
     <div class="ui-toolbar">
       <div class="ui-toolbar-left">
-        <select v-model="filters.projectId" class="ui-select w-52" @change="load">
+        <select v-if="auth.isAdminOrManager" v-model="filters.projectId" class="ui-select w-52" @change="load">
           <option value="">Все проекты</option>
           <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
         </select>
-        <select v-model="filters.assigneeId" class="ui-select w-48" @change="load">
+        <select v-if="!auth.isMember" v-model="filters.assigneeId" class="ui-select w-48" @change="load">
           <option value="">Исполнитель</option>
           <option v-for="m in members" :key="m.id" :value="m.id">{{ m.name }}</option>
         </select>
@@ -22,7 +22,7 @@
           <input v-model="filters.overdue" type="checkbox" @change="load" /> Просроченные
         </label>
       </div>
-      <button class="ui-button ui-button-primary" type="button" @click="openCreate">
+      <button v-if="auth.isAdminOrManager" class="ui-button ui-button-primary" type="button" @click="openCreate">
         <Plus class="size-4" /> Добавить задачу
       </button>
     </div>
@@ -74,10 +74,10 @@
                   >
                     <option v-for="[val, lbl] in STATUS_OPTIONS" :key="val" :value="val">{{ lbl }}</option>
                   </select>
-                  <button class="ui-button ui-button-ghost px-2" type="button" @click="openEdit(row)">
+                  <button v-if="auth.isAdminOrManager" class="ui-button ui-button-ghost px-2" type="button" @click="openEdit(row)">
                     <Pencil class="size-4" />
                   </button>
-                  <button class="ui-button ui-button-danger px-2" type="button" @click="remove(row.id)">
+                  <button v-if="auth.isAdminOrManager" class="ui-button ui-button-danger px-2" type="button" @click="remove(row.id)">
                     <Trash2 class="size-4" />
                   </button>
                 </div>
@@ -109,6 +109,9 @@ import { teamApi } from '@/api/team'
 import StatusBadge from '@/components/StatusBadge.vue'
 import TaskFormModal from '@/components/TaskFormModal.vue'
 import { confirmAction, notify } from '@/utils/notify'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 
 const STATUS_OPTIONS = [
   ['TODO', 'К выполнению'],
@@ -177,12 +180,12 @@ const remove = async (id) => {
 }
 
 onMounted(async () => {
-  const [, pr, mr] = await Promise.all([
-    load(),
-    projectsApi.getAll(),
-    teamApi.getAll(),
-  ])
-  projects.value = pr.data.data
-  members.value = mr.data.data
+  const promises = [load()]
+  if (auth.isAdminOrManager) {
+    promises.push(projectsApi.getAll(), teamApi.getAll())
+  }
+  const [, pr, mr] = await Promise.allSettled(promises)
+  if (pr?.status === 'fulfilled') projects.value = pr.value.data.data
+  if (mr?.status === 'fulfilled') members.value = mr.value.data.data
 })
 </script>
