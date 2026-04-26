@@ -29,7 +29,12 @@ const getFinanceRecipients = async () => {
 
   // Per-user chatIds for users with finance notifications enabled
   const users = await prisma.user.findMany({
-    where: { isActive: true, financeNotificationsEnabled: true, telegramChatId: { not: null } },
+    where: {
+      isActive: true,
+      role: { in: ['OWNER', 'ADMIN', 'MANAGER'] },
+      financeNotificationsEnabled: true,
+      telegramChatId: { not: null },
+    },
     select: { telegramChatId: true },
   });
   for (const u of users) if (u.telegramChatId) chatIds.add(u.telegramChatId);

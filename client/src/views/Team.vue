@@ -107,11 +107,9 @@ import { teamApi } from '@/api/team'
 import { confirmAction, notify } from '@/utils/notify'
 
 const ROLE_OPTIONS = [
-  ['OWNER', 'Владелец'],
   ['ADMIN', 'Администратор'],
   ['MANAGER', 'Менеджер'],
   ['MEMBER', 'Участник'],
-  ['VIEWER', 'Наблюдатель'],
 ]
 const ROLE_MAP = Object.fromEntries(ROLE_OPTIONS)
 const roleLabel = (r) => ROLE_MAP[r] || r

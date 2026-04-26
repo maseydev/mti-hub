@@ -106,7 +106,7 @@ model User {
   email                       String   @unique
   passwordHash                String
   name                        String
-  role                        UserRole @default(OWNER)
+  role                        UserRole @default(MEMBER)
   position                    String?
   telegram                    String?
   isActive                    Boolean  @default(true)

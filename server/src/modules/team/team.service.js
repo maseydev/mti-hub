@@ -17,7 +17,7 @@ const PUBLIC_SELECT = {
   updatedAt: true,
 };
 
-const ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'MEMBER', 'VIEWER'];
+const ROLES = ['ADMIN', 'MANAGER', 'MEMBER'];
 
 const createSchema = z.object({
   email: z.string().email('Некорректный email'),
