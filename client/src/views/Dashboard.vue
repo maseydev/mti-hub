@@ -243,9 +243,12 @@ const financeStats = computed(() => [
   { label: 'Активных клиентов', value: financeSummary.value.activeClientsCount, sub: `Услуг: ${financeSummary.value.activeServicesCount}`, className: 'metric-neutral' },
 ])
 
-onMounted(async () => {
+const loadDashboard = async () => {
   loading.value = true
   try {
+    if (!auth.user && auth.token) await auth.fetchMe()
+    if (!auth.user) return
+
     if (auth.isAdmin) {
       const [s, u, o, c, at] = await Promise.allSettled([
         dashboardApi.getSummary(),
@@ -267,5 +270,7 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(loadDashboard)
 </script>
