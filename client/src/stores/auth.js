@@ -33,10 +33,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const updateProfile = async (data) => {
+    const res = await authApi.updateMe(data)
+    user.value = res.data.data
+    return res.data.data
+  }
+
+  const changePassword = async (data) => {
+    const res = await authApi.changePassword(data)
+    return res.data.data
+  }
+
   const isAdmin = computed(() => ['ADMIN', 'OWNER'].includes(user.value?.role))
   const isManager = computed(() => user.value?.role === 'MANAGER')
   const isMember = computed(() => user.value?.role === 'MEMBER')
   const isAdminOrManager = computed(() => ['ADMIN', 'OWNER', 'MANAGER'].includes(user.value?.role))
 
-  return { token, user, login, logout, fetchMe, isAdmin, isManager, isMember, isAdminOrManager }
+  return { token, user, login, logout, fetchMe, updateProfile, changePassword, isAdmin, isManager, isMember, isAdminOrManager }
 })

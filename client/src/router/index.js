@@ -13,6 +13,7 @@ const routes = [
     children: [
       { path: '', redirect: '/dashboard' },
       { path: 'dashboard', component: () => import('@/views/Dashboard.vue') },
+      { path: 'profile', component: () => import('@/views/Profile.vue') },
       { path: 'clients', component: () => import('@/views/Clients.vue'), meta: { roles: MANAGER_ROLES } },
       { path: 'clients/:id', component: () => import('@/views/ClientDetail.vue'), meta: { roles: MANAGER_ROLES } },
       { path: 'projects', component: () => import('@/views/Projects.vue'), meta: { roles: MANAGER_ROLES } },

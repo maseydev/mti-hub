@@ -9,7 +9,9 @@
             <p class="mt-0.5 ui-eyebrow">Billing workspace</p>
           </div>
           <div class="flex items-center gap-3">
-            <span class="hidden max-w-48 truncate text-sm text-slate-400 sm:block">{{ auth.user?.name }}</span>
+            <router-link to="/profile" class="hidden max-w-48 truncate text-sm font-medium text-slate-400 transition hover:text-slate-100 sm:block">
+              {{ auth.user?.name }}
+            </router-link>
             <button class="ui-button ui-button-ghost" type="button" @click="handleLogout">
               Выйти
             </button>
@@ -35,6 +37,7 @@ const route = useRoute()
 
 const titles = {
   '/dashboard': 'Дашборд',
+  '/profile': 'Профиль',
   '/clients': 'Клиенты',
   '/projects': 'Проекты',
   '/services': 'Регулярные услуги',

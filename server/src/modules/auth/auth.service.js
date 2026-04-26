@@ -18,6 +18,20 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+const updateMeSchema = z.object({
+  email: z.string().email('Некорректный email').optional(),
+  name: z.string().min(1, 'Укажите имя').optional(),
+  position: z.string().optional().nullable(),
+  telegram: z.string().optional().nullable(),
+  locale: z.string().min(2).max(12).optional(),
+  currency: z.string().min(3).max(8).optional(),
+});
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Укажите текущий пароль'),
+  newPassword: z.string().min(6, 'Новый пароль минимум 6 символов'),
+});
+
 const register = async (data) => {
   const parsed = registerSchema.safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
@@ -56,4 +70,38 @@ const getMe = async (userId) => {
   return user;
 };
 
-module.exports = { register, login, getMe };
+const updateMe = async (userId, data) => {
+  const parsed = updateMeSchema.safeParse(data);
+  if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
+
+  if (parsed.data.email) {
+    const existing = await prisma.user.findFirst({
+      where: { email: parsed.data.email, NOT: { id: userId } },
+      select: { id: true },
+    });
+    if (existing) throw new AppError('Пользователь с таким email уже существует');
+  }
+
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: parsed.data,
+    select: USER_SELECT,
+  });
+  return user;
+};
+
+const changePassword = async (userId, data) => {
+  const parsed = changePasswordSchema.safeParse(data);
+  if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+  if (!user) throw new NotFoundError('Пользователь не найден');
+
+  const valid = await argon2.verify(user.passwordHash, parsed.data.currentPassword);
+  if (!valid) throw new UnauthorizedError('Текущий пароль указан неверно');
+
+  const passwordHash = await argon2.hash(parsed.data.newPassword);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+};
+
+module.exports = { register, login, getMe, updateMe, changePassword };

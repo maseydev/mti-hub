@@ -15,4 +15,14 @@ const me = async (req, res) => {
   res.json({ data: user });
 };
 
-module.exports = { register, login, me };
+const updateMe = async (req, res) => {
+  const user = await authService.updateMe(req.userId, req.body);
+  res.json({ data: user });
+};
+
+const changePassword = async (req, res) => {
+  await authService.changePassword(req.userId, req.body);
+  res.json({ data: { ok: true } });
+};
+
+module.exports = { register, login, me, updateMe, changePassword };
