@@ -1,6 +1,8 @@
 const { z } = require('zod');
 const axios = require('axios');
+const crypto = require('crypto');
 const prisma = require('../../config/prisma');
+const { TELEGRAM_TOKEN_SECRET } = require('../../config/env');
 const { AppError, NotFoundError } = require('../../utils/errors');
 
 const settingsSchema = z.object({
@@ -21,6 +23,30 @@ const mySettingsSchema = z.object({
   taskNotificationsEnabled: z.boolean().optional(),
   financeNotificationsEnabled: z.boolean().optional(),
 });
+
+const TOKEN_PREFIX = 'enc:v1:';
+
+const getTokenKey = () => crypto.createHash('sha256').update(TELEGRAM_TOKEN_SECRET).digest();
+
+const encryptToken = (token) => {
+  if (!token || token.startsWith(TOKEN_PREFIX)) return token || '';
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', getTokenKey(), iv);
+  const encrypted = Buffer.concat([cipher.update(token, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `${TOKEN_PREFIX}${iv.toString('base64')}:${tag.toString('base64')}:${encrypted.toString('base64')}`;
+};
+
+const decryptToken = (value) => {
+  if (!value || !value.startsWith(TOKEN_PREFIX)) return value || '';
+  const [ivRaw, tagRaw, encryptedRaw] = value.slice(TOKEN_PREFIX.length).split(':');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', getTokenKey(), Buffer.from(ivRaw, 'base64'));
+  decipher.setAuthTag(Buffer.from(tagRaw, 'base64'));
+  return Buffer.concat([
+    decipher.update(Buffer.from(encryptedRaw, 'base64')),
+    decipher.final(),
+  ]).toString('utf8');
+};
 
 // --- Finance reminder settings (global) ---
 
@@ -48,16 +74,27 @@ const getBots = async () => {
 
 const getBotRaw = async (type) => {
   const bot = await prisma.telegramBotSettings.findUnique({ where: { type } });
-  return bot;
+  return bot ? { ...bot, botToken: decryptToken(bot.botToken) } : null;
 };
 
 const updateBot = async (type, data) => {
   const parsed = botSchema.safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
+
+  const botData = { ...parsed.data };
+  if (Object.prototype.hasOwnProperty.call(botData, 'botToken')) {
+    const token = botData.botToken?.trim() || '';
+    if (token === '***') {
+      delete botData.botToken;
+    } else {
+      botData.botToken = encryptToken(token);
+    }
+  }
+
   return prisma.telegramBotSettings.upsert({
     where: { type },
-    update: parsed.data,
-    create: { type, ...parsed.data },
+    update: botData,
+    create: { type, ...botData },
     select: { id: true, type: true, botUsername: true, isEnabled: true, updatedAt: true },
   });
 };

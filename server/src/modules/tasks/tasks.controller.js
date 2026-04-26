@@ -8,17 +8,17 @@ const getAll = async (req, res) => {
 };
 
 const getById = async (req, res) => {
-  const data = await svc.getById(req.params.id);
+  const data = await svc.getById(req.params.id, ctx(req));
   res.json({ data });
 };
 
 const create = async (req, res) => {
-  const data = await svc.create(req.body, req.userId);
+  const data = await svc.create(req.body, ctx(req));
   res.status(201).json({ data });
 };
 
 const update = async (req, res) => {
-  const data = await svc.update(req.params.id, req.body);
+  const data = await svc.update(req.params.id, req.body, ctx(req));
   res.json({ data });
 };
 
@@ -28,7 +28,7 @@ const updateStatus = async (req, res) => {
 };
 
 const remove = async (req, res) => {
-  await svc.remove(req.params.id);
+  await svc.remove(req.params.id, ctx(req));
   res.json({ data: { ok: true } });
 };
 

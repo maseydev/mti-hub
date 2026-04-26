@@ -4,6 +4,8 @@ const { NotFoundError, AppError, ForbiddenError } = require('../../utils/errors'
 
 const STATUSES = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'];
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'];
+const ADMIN_ROLES = ['ADMIN', 'OWNER'];
+const MANAGER_ROLES = ['ADMIN', 'OWNER', 'MANAGER'];
 
 const taskInclude = {
   project: {
@@ -38,17 +40,35 @@ const updateSchema = z.object({
 });
 
 const coerceDate = (v) => (v === '' || v == null ? null : new Date(v));
+const isAdmin = (role) => ADMIN_ROLES.includes(role);
+const isManager = (role) => MANAGER_ROLES.includes(role);
+const isMember = (role) => role === 'MEMBER';
+
+const ensureCanRead = (task, ctx = {}) => {
+  if (isManager(ctx.role)) return;
+  if (isMember(ctx.role) && task.assigneeId === ctx.userId) return;
+  throw new ForbiddenError('Недостаточно прав');
+};
+
+const ensureCanManage = (ctx = {}) => {
+  if (!isManager(ctx.role)) throw new ForbiddenError('Недостаточно прав');
+};
+
+const ensureCanDelete = (ctx = {}) => {
+  if (!isAdmin(ctx.role)) throw new ForbiddenError('Недостаточно прав');
+};
 
 const getAll = async (filters = {}, ctx = {}) => {
   const where = {};
   if (filters.projectId) where.projectId = filters.projectId;
   if (filters.priority) where.priority = filters.priority;
 
-  // MEMBER always sees only their own tasks
-  if (ctx.role === 'MEMBER') {
+  if (isMember(ctx.role)) {
     where.assigneeId = ctx.userId;
-  } else if (filters.assigneeId) {
-    where.assigneeId = filters.assigneeId;
+  } else if (isManager(ctx.role)) {
+    if (filters.assigneeId) where.assigneeId = filters.assigneeId;
+  } else {
+    throw new ForbiddenError('Недостаточно прав');
   }
 
   if (filters.overdue === 'true') {
@@ -72,20 +92,22 @@ const getAll = async (filters = {}, ctx = {}) => {
   });
 };
 
-const getById = async (id) => {
+const getById = async (id, ctx = {}) => {
   const task = await prisma.task.findUnique({ where: { id }, include: taskInclude });
   if (!task) throw new NotFoundError('Задача не найдена');
+  ensureCanRead(task, ctx);
   return task;
 };
 
-const create = async (data, createdById) => {
+const create = async (data, ctx = {}) => {
+  ensureCanManage(ctx);
   const parsed = createSchema.safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
   const { plannedStart, plannedEnd, dueDate, ...rest } = parsed.data;
   return prisma.task.create({
     data: {
       ...rest,
-      createdById: createdById || null,
+      createdById: ctx.userId || null,
       plannedStart: coerceDate(plannedStart),
       plannedEnd: coerceDate(plannedEnd),
       dueDate: coerceDate(dueDate),
@@ -94,8 +116,9 @@ const create = async (data, createdById) => {
   });
 };
 
-const update = async (id, data) => {
-  await getById(id);
+const update = async (id, data, ctx = {}) => {
+  ensureCanManage(ctx);
+  await getById(id, ctx);
   const parsed = updateSchema.safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
   const { plannedStart, plannedEnd, dueDate, status, ...rest } = parsed.data;
@@ -126,9 +149,9 @@ const update = async (id, data) => {
 
 const updateStatus = async (id, status, ctx = {}) => {
   if (!STATUSES.includes(status)) throw new AppError('Неверный статус', 422);
-  const task = await getById(id);
+  const task = await getById(id, ctx);
 
-  if (ctx.role === 'MEMBER' && task.assigneeId !== ctx.userId) {
+  if (!isManager(ctx.role) && !(isMember(ctx.role) && task.assigneeId === ctx.userId)) {
     throw new ForbiddenError('Недостаточно прав');
   }
 
@@ -146,8 +169,9 @@ const updateStatus = async (id, status, ctx = {}) => {
   });
 };
 
-const remove = async (id) => {
-  await getById(id);
+const remove = async (id, ctx = {}) => {
+  ensureCanDelete(ctx);
+  await getById(id, ctx);
   await prisma.task.delete({ where: { id } });
 };
 

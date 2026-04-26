@@ -38,14 +38,21 @@ const getFinanceRecipients = async () => {
 };
 
 const broadcastFinance = async (chatIds, text, billingItemId, reminderType) => {
+  let sentCount = 0;
+  let failedCount = 0;
+
   for (const chatId of chatIds) {
     try {
       await telegramSvc.sendMessage(chatId, text, 'FINANCE');
-      await logNotification(reminderType, billingItemId, 'SENT');
-      return; // log once per item
+      sentCount += 1;
     } catch (err) {
+      failedCount += 1;
       await logNotification(reminderType, billingItemId, 'FAILED', err.message);
     }
+  }
+
+  if (sentCount > 0) {
+    await logNotification(reminderType, billingItemId, 'SENT', failedCount ? `${failedCount} recipient(s) failed` : null);
   }
 };
 

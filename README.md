@@ -15,7 +15,7 @@
 
 ```bash
 cp .env.example .env
-# Отредактируйте .env — минимум: JWT_SECRET и TELEGRAM_BOT_TOKEN
+# Отредактируйте .env — минимум: JWT_SECRET и POSTGRES_PASSWORD
 
 docker compose up --build
 ```
@@ -51,7 +51,7 @@ npm run dev               # :5173 (проксирует /api → :5000)
 | `DATABASE_URL`      | PostgreSQL connection string          | —                           |
 | `JWT_SECRET`        | Секрет для подписи токенов            | —                           |
 | `JWT_ACCESS_TTL`    | Время жизни токена                    | `7d`                        |
-| `TELEGRAM_BOT_TOKEN`| Токен бота (BotFather)                | —                           |
+| `TELEGRAM_TOKEN_SECRET` | Секрет для шифрования Telegram-токенов | `JWT_SECRET`             |
 | `PORT`              | Порт бэкенда                          | `5000`                      |
 | `POSTGRES_DB`       | Имя БД (docker-compose)               | `mtihub`                    |
 | `POSTGRES_USER`     | Пользователь БД (docker-compose)      | `studio`                    |
@@ -62,14 +62,14 @@ npm run dev               # :5173 (проксирует /api → :5000)
 - Обязательно смените `JWT_SECRET` и `POSTGRES_PASSWORD`
 - Поставьте Caddy перед контейнерами для TLS
 - Регулярно делайте бэкап тома `postgres_data`
-- Telegram-напоминания работают только при заданном `TELEGRAM_BOT_TOKEN` и настроенном chatId в интерфейсе
+- Telegram-боты настраиваются в интерфейсе, токены вводятся через UI и хранятся в БД в зашифрованном виде
 
 ## Структура
 
 ```
 MTI-HUB/
   server/          Node.js + Express 5 + Prisma
-  client/          Vue 3 + Vite + Element Plus
+  client/          Vue 3 + Vite + Tailwind CSS
   docker-compose.yml
   .env.example
 ```
