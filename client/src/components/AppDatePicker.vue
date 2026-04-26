@@ -2,7 +2,8 @@
   <div ref="rootRef" class="relative">
     <div class="relative">
       <button
-        class="ui-input flex h-10 items-center gap-2 pr-9 text-left"
+        ref="triggerRef"
+        class="ui-input flex h-10 w-full items-center gap-2 pr-9 text-left"
         type="button"
         @click="toggle"
       >
@@ -21,51 +22,55 @@
       </button>
     </div>
 
-    <div
-      v-if="open"
-      class="absolute left-0 top-full z-[70] mt-2 w-72 rounded-lg border border-slate-700 bg-slate-950 p-3 shadow-2xl shadow-black/50"
-    >
-      <div class="mb-3 flex items-center justify-between">
-        <button class="rounded-md p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-100" type="button" @click="shiftMonth(-1)">
-          <ChevronLeft class="size-4" />
-        </button>
-        <div class="text-sm font-semibold text-slate-100">{{ monthTitle }}</div>
-        <button class="rounded-md p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-100" type="button" @click="shiftMonth(1)">
-          <ChevronRight class="size-4" />
-        </button>
-      </div>
+    <Teleport to="body">
+      <div
+        v-if="open"
+        ref="panelRef"
+        :style="dropdownStyle"
+        class="fixed z-[9999] w-72 rounded-lg border border-slate-700 bg-slate-950 p-3 shadow-2xl shadow-black/50"
+      >
+        <div class="mb-3 flex items-center justify-between">
+          <button class="rounded-md p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-100" type="button" @click="shiftMonth(-1)">
+            <ChevronLeft class="size-4" />
+          </button>
+          <div class="text-sm font-semibold text-slate-100">{{ monthTitle }}</div>
+          <button class="rounded-md p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-100" type="button" @click="shiftMonth(1)">
+            <ChevronRight class="size-4" />
+          </button>
+        </div>
 
-      <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium text-slate-500">
-        <div v-for="day in weekDays" :key="day" class="py-1">{{ day }}</div>
-      </div>
+        <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium text-slate-500">
+          <div v-for="day in weekDays" :key="day" class="py-1">{{ day }}</div>
+        </div>
 
-      <div class="mt-1 grid grid-cols-7 gap-1">
-        <button
-          v-for="day in calendarDays"
-          :key="day.key"
-          class="grid h-9 place-items-center rounded-md text-sm transition"
-          :class="dayClasses(day)"
-          type="button"
-          @click="selectDate(day.value)"
-        >
-          {{ day.label }}
-        </button>
-      </div>
+        <div class="mt-1 grid grid-cols-7 gap-1">
+          <button
+            v-for="day in calendarDays"
+            :key="day.key"
+            class="grid h-9 place-items-center rounded-md text-sm transition"
+            :class="dayClasses(day)"
+            type="button"
+            @click="selectDate(day.value)"
+          >
+            {{ day.label }}
+          </button>
+        </div>
 
-      <div class="mt-3 flex items-center justify-between border-t border-slate-800 pt-3">
-        <button class="text-xs font-semibold text-blue-300 hover:text-blue-200" type="button" @click="selectDate(todayString)">
-          Сегодня
-        </button>
-        <button class="text-xs font-semibold text-slate-500 hover:text-slate-300" type="button" @click="open = false">
-          Закрыть
-        </button>
+        <div class="mt-3 flex items-center justify-between border-t border-slate-800 pt-3">
+          <button class="text-xs font-semibold text-blue-300 hover:text-blue-200" type="button" @click="selectDate(todayString)">
+            Сегодня
+          </button>
+          <button class="text-xs font-semibold text-slate-500 hover:text-slate-300" type="button" @click="open = false">
+            Закрыть
+          </button>
+        </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -77,13 +82,15 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'change'])
 
 const rootRef = ref(null)
+const triggerRef = ref(null)
+const panelRef = ref(null)
 const open = ref(false)
 const viewDate = ref(new Date())
+const dropdownStyle = ref({})
 const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const monthNames = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь']
 
 const pad = (value) => String(value).padStart(2, '0')
-
 const toDateString = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 
 const parseDate = (value) => {
@@ -129,9 +136,33 @@ const syncViewDate = () => {
 
 watch(() => props.modelValue, syncViewDate, { immediate: true })
 
+const computeDropdownStyle = () => {
+  const rect = triggerRef.value?.getBoundingClientRect()
+  if (!rect) return {}
+  const panelWidth = 288
+  const panelHeight = panelRef.value?.offsetHeight || 320
+  const spaceBelow = window.innerHeight - rect.bottom
+  const top = spaceBelow < panelHeight && rect.top > panelHeight
+    ? rect.top - panelHeight - 8
+    : rect.bottom + 8
+  const left = Math.min(Math.max(8, rect.left), window.innerWidth - panelWidth - 8)
+  return { top: `${Math.max(8, top)}px`, left: `${left}px` }
+}
+
+const updateDropdownPosition = () => {
+  if (!open.value) return
+  dropdownStyle.value = computeDropdownStyle()
+}
+
 const toggle = () => {
   syncViewDate()
-  open.value = !open.value
+  if (open.value) {
+    open.value = false
+  } else {
+    dropdownStyle.value = computeDropdownStyle()
+    open.value = true
+    nextTick(updateDropdownPosition)
+  }
 }
 
 const shiftMonth = (direction) => {
@@ -154,9 +185,19 @@ const dayClasses = (day) => {
 }
 
 const handleOutside = (event) => {
-  if (!rootRef.value?.contains(event.target)) open.value = false
+  const target = event.target
+  if (rootRef.value?.contains(target) || panelRef.value?.contains(target)) return
+  open.value = false
 }
 
-onMounted(() => document.addEventListener('pointerdown', handleOutside))
-onBeforeUnmount(() => document.removeEventListener('pointerdown', handleOutside))
+onMounted(() => {
+  document.addEventListener('pointerdown', handleOutside)
+  window.addEventListener('resize', updateDropdownPosition)
+  window.addEventListener('scroll', updateDropdownPosition, true)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleOutside)
+  window.removeEventListener('resize', updateDropdownPosition)
+  window.removeEventListener('scroll', updateDropdownPosition, true)
+})
 </script>

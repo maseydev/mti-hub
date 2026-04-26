@@ -102,14 +102,14 @@ enum TelegramBotType {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  role         UserRole @default(OWNER)
-  position     String?
-  telegram     String?
-  isActive     Boolean  @default(true)
+  id                          String   @id @default(cuid())
+  email                       String   @unique
+  passwordHash                String
+  name                        String
+  role                        UserRole @default(OWNER)
+  position                    String?
+  telegram                    String?
+  isActive                    Boolean  @default(true)
   telegramChatId              String?
   taskNotificationsEnabled    Boolean  @default(true)
   financeNotificationsEnabled Boolean  @default(false)
@@ -118,8 +118,9 @@ model User {
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
 
-  assignedTasks Task[]   @relation("TaskAssignee")
-  createdTasks  Task[]   @relation("TaskCreator")
+  assignedTasks Task[] @relation("TaskAssignee")
+  createdTasks  Task[] @relation("TaskCreator")
+  notes         Note[] @relation("NoteCreator")
 }
 
 model Client {
@@ -140,6 +141,7 @@ model Client {
   services     Service[]
   billingItems BillingItem[]
   transactions Transaction[]
+  noteItems    Note[]
 }
 
 model Project {
@@ -161,6 +163,7 @@ model Project {
   billingItems BillingItem[]
   transactions Transaction[]
   tasks        Task[]
+  noteItems    Note[]
 }
 
 model Service {
@@ -324,4 +327,29 @@ model Task {
   @@index([dueDate])
   @@index([plannedStart])
   @@index([plannedEnd])
+}
+
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  clientId    String?
+  projectId   String?
+  createdById String
+  isPinned    Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client    Client?  @relation(fields: [clientId], references: [id])
+  project   Project? @relation(fields: [projectId], references: [id])
+  createdBy User     @relation("NoteCreator", fields: [createdById], references: [id])
+
+  @@index([createdById])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([isPinned])
+  @@index([isArchived])
+  @@index([updatedAt])
+  @@index([title])
 }

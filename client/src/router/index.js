@@ -18,6 +18,7 @@ const routes = [
       { path: 'projects', component: () => import('@/views/Projects.vue'), meta: { roles: MANAGER_ROLES } },
       { path: 'projects/:id', component: () => import('@/views/ProjectDetail.vue') },
       { path: 'tasks', component: () => import('@/views/Tasks.vue') },
+      { path: 'notes', component: () => import('@/views/NotesView.vue') },
       { path: 'services', component: () => import('@/views/Services.vue'), meta: { roles: ADMIN_ROLES } },
       { path: 'billing', component: () => import('@/views/Billing.vue'), meta: { roles: ADMIN_ROLES } },
       { path: 'transactions', component: () => import('@/views/Transactions.vue'), meta: { roles: ADMIN_ROLES } },

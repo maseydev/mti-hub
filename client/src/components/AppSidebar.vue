@@ -49,6 +49,7 @@ import {
   Landmark,
   Layers3,
   RefreshCw,
+  StickyNote,
   Tags,
   Users,
 } from 'lucide-vue-next'
@@ -64,6 +65,7 @@ const primaryItems = [
   { to: '/services', label: 'Регулярные услуги', icon: RefreshCw, roles: ['ADMIN', 'OWNER'] },
   { to: '/billing', label: 'Ожидаемые платежи', icon: CreditCard, roles: ['ADMIN', 'OWNER'] },
   { to: '/tasks', label: 'Задачи', icon: CheckSquare, roles: null },
+  { to: '/notes', label: 'Заметки', icon: StickyNote, roles: null },
   { to: '/transactions', label: 'Транзакции', icon: Layers3, roles: ['ADMIN', 'OWNER'] },
 ]
 

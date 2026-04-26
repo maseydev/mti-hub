@@ -80,6 +80,13 @@
           </table>
           <div v-if="!client.transactions?.length" class="ui-empty m-5">Нет транзакций</div>
         </DataPanel>
+
+        <NotesPanel
+          v-if="auth.isAdminOrManager"
+          title="Заметки клиента"
+          :fixed-client-id="client.id"
+          :show-filters="false"
+        />
       </section>
     </div>
   </div>
@@ -90,6 +97,8 @@ import { computed, defineComponent, h, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowLeft } from 'lucide-vue-next'
 import { clientsApi } from '@/api/clients'
+import { useAuthStore } from '@/stores/auth'
+import NotesPanel from '@/components/NotesPanel.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 
 const DataPanel = defineComponent({
@@ -106,6 +115,7 @@ const DataPanel = defineComponent({
 })
 
 const route = useRoute()
+const auth = useAuthStore()
 const client = ref(null)
 const loading = ref(false)
 

@@ -43,68 +43,77 @@
         </p>
       </aside>
 
-      <section class="ui-card">
-        <div class="ui-card-header flex items-center justify-between">
-          <span>Задачи <span class="ml-2 text-xs text-slate-500">{{ tasks.length }}</span></span>
-          <button class="ui-button ui-button-primary py-1.5 text-xs" type="button" @click="openCreate">
-            <Plus class="size-4" /> Добавить задачу
-          </button>
+      <section class="space-y-5">
+        <div class="ui-card">
+          <div class="ui-card-header flex items-center justify-between">
+            <span>Задачи <span class="ml-2 text-xs text-slate-500">{{ tasks.length }}</span></span>
+            <button class="ui-button ui-button-primary py-1.5 text-xs" type="button" @click="openCreate">
+              <Plus class="size-4" /> Добавить задачу
+            </button>
+          </div>
+
+          <div class="mb-3 flex flex-wrap gap-2 px-5 pt-3">
+            <select v-model="taskFilter" class="ui-select w-44" @change="loadTasks">
+              <option value="">Все статусы</option>
+              <option v-for="[val, lbl] in STATUS_OPTIONS" :key="val" :value="val">{{ lbl }}</option>
+            </select>
+          </div>
+
+          <div class="ui-table-scroll">
+            <table class="ui-table">
+              <thead>
+                <tr>
+                  <th>Название</th>
+                  <th>Исполнитель</th>
+                  <th>Статус</th>
+                  <th>Приоритет</th>
+                  <th>Дедлайн</th>
+                  <th class="text-right">Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in tasks"
+                  :key="row.id"
+                  :class="isOverdue(row) ? 'bg-red-950/20' : ''"
+                >
+                  <td class="max-w-xs truncate font-medium text-slate-100">{{ row.title }}</td>
+                  <td>{{ row.assignee?.name || '—' }}</td>
+                  <td><StatusBadge :status="row.status" domain="task" /></td>
+                  <td><StatusBadge :status="row.priority" domain="priority" /></td>
+                  <td class="ui-number" :class="isOverdue(row) ? 'font-semibold text-rose-300' : ''">
+                    {{ fmtDate(row.dueDate) }}
+                  </td>
+                  <td>
+                    <div class="flex justify-end gap-1">
+                      <select
+                        class="ui-select py-1 text-xs"
+                        :value="row.status"
+                        @change="changeStatus(row.id, $event.target.value)"
+                      >
+                        <option v-for="[val, lbl] in STATUS_OPTIONS" :key="val" :value="val">{{ lbl }}</option>
+                      </select>
+                      <button class="ui-button ui-button-ghost px-2" type="button" @click="openEdit(row)">
+                        <Pencil class="size-4" />
+                      </button>
+                      <button class="ui-button ui-button-danger px-2" type="button" @click="remove(row.id)">
+                        <Trash2 class="size-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-if="!tasks.length && !loadingTasks" class="ui-empty m-5">Задач пока нет</div>
         </div>
 
-        <div class="mb-3 flex flex-wrap gap-2 px-5 pt-3">
-          <select v-model="taskFilter" class="ui-select w-44" @change="loadTasks">
-            <option value="">Все статусы</option>
-            <option v-for="[val, lbl] in STATUS_OPTIONS" :key="val" :value="val">{{ lbl }}</option>
-          </select>
-        </div>
-
-        <div class="ui-table-scroll">
-          <table class="ui-table">
-            <thead>
-              <tr>
-                <th>Название</th>
-                <th>Исполнитель</th>
-                <th>Статус</th>
-                <th>Приоритет</th>
-                <th>Дедлайн</th>
-                <th class="text-right">Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="row in tasks"
-                :key="row.id"
-                :class="isOverdue(row) ? 'bg-red-950/20' : ''"
-              >
-                <td class="max-w-xs truncate font-medium text-slate-100">{{ row.title }}</td>
-                <td>{{ row.assignee?.name || '—' }}</td>
-                <td><StatusBadge :status="row.status" domain="task" /></td>
-                <td><StatusBadge :status="row.priority" domain="priority" /></td>
-                <td class="ui-number" :class="isOverdue(row) ? 'font-semibold text-rose-300' : ''">
-                  {{ fmtDate(row.dueDate) }}
-                </td>
-                <td>
-                  <div class="flex justify-end gap-1">
-                    <select
-                      class="ui-select py-1 text-xs"
-                      :value="row.status"
-                      @change="changeStatus(row.id, $event.target.value)"
-                    >
-                      <option v-for="[val, lbl] in STATUS_OPTIONS" :key="val" :value="val">{{ lbl }}</option>
-                    </select>
-                    <button class="ui-button ui-button-ghost px-2" type="button" @click="openEdit(row)">
-                      <Pencil class="size-4" />
-                    </button>
-                    <button class="ui-button ui-button-danger px-2" type="button" @click="remove(row.id)">
-                      <Trash2 class="size-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div v-if="!tasks.length && !loadingTasks" class="ui-empty m-5">Задач пока нет</div>
+        <NotesPanel
+          v-if="project"
+          title="Заметки проекта"
+          :fixed-project-id="project.id"
+          :show-filters="false"
+        />
       </section>
     </div>
 
@@ -127,6 +136,7 @@ import { projectsApi } from '@/api/projects'
 import { tasksApi } from '@/api/tasks'
 import { teamApi } from '@/api/team'
 import StatusBadge from '@/components/StatusBadge.vue'
+import NotesPanel from '@/components/NotesPanel.vue'
 import TaskFormModal from '@/components/TaskFormModal.vue'
 import { confirmAction, notify } from '@/utils/notify'
 
