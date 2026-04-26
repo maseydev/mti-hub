@@ -1,15 +1,15 @@
 <template>
-  <div>
+  <div class="dashboard-page">
     <div class="stat-cards" v-loading="loadingSummary">
-      <el-card class="stat-card">
+      <el-card class="stat-card accent-income">
         <div class="stat-label">Доходы за месяц</div>
         <div class="stat-value income">{{ fmt(summary.currentMonthIncome) }}</div>
       </el-card>
-      <el-card class="stat-card">
+      <el-card class="stat-card accent-expense">
         <div class="stat-label">Расходы за месяц</div>
         <div class="stat-value expense">{{ fmt(summary.currentMonthExpense) }}</div>
       </el-card>
-      <el-card class="stat-card">
+      <el-card class="stat-card accent-profit">
         <div class="stat-label">Прибыль за месяц</div>
         <div class="stat-value" :class="summary.currentMonthProfit >= 0 ? 'income' : 'expense'">
           {{ fmt(summary.currentMonthProfit) }}
@@ -20,7 +20,7 @@
         <div class="stat-value">{{ summary.upcomingPaymentsCount }}</div>
         <div class="stat-sub">{{ fmt(summary.upcomingPaymentsAmount) }}</div>
       </el-card>
-      <el-card class="stat-card danger">
+      <el-card class="stat-card danger accent-overdue">
         <div class="stat-label">Просрочено</div>
         <div class="stat-value expense">{{ summary.overduePaymentsCount }}</div>
         <div class="stat-sub">{{ fmt(summary.overduePaymentsAmount) }}</div>
@@ -32,9 +32,9 @@
       </el-card>
     </div>
 
-    <el-row :gutter="20" style="margin-top:24px">
-      <el-col :span="12">
-        <el-card>
+    <div class="dashboard-grid">
+      <section>
+        <el-card class="panel-card">
           <template #header><span>Предстоящие платежи (30 дней)</span></template>
           <el-table :data="upcoming" size="small" v-loading="loadingUpcoming">
             <el-table-column prop="client.name" label="Клиент" min-width="120" />
@@ -51,10 +51,10 @@
           </el-table>
           <el-empty v-if="!upcoming.length && !loadingUpcoming" description="Нет предстоящих платежей" />
         </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card>
-          <template #header><span style="color:#f56c6c">Просроченные платежи</span></template>
+      </section>
+      <section>
+        <el-card class="panel-card">
+          <template #header><span class="danger-title">Просроченные платежи</span></template>
           <el-table :data="overdue" size="small" v-loading="loadingOverdue">
             <el-table-column prop="client.name" label="Клиент" min-width="120" />
             <el-table-column prop="title" label="Услуга" min-width="160" show-overflow-tooltip />
@@ -65,12 +65,12 @@
               <template #default="{ row }"><span style="color:#f56c6c">{{ fmtDate(row.dueDate) }}</span></template>
             </el-table-column>
           </el-table>
-          <el-empty v-if="!overdue.length && !loadingOverdue" description="Просроченных платежей нет 🎉" />
+          <el-empty v-if="!overdue.length && !loadingOverdue" description="Просроченных платежей нет" />
         </el-card>
-      </el-col>
-    </el-row>
+      </section>
+    </div>
 
-    <el-card style="margin-top:24px">
+    <el-card class="panel-card monthly-panel">
       <template #header>Доходы и расходы за 6 месяцев</template>
       <el-table :data="chart" size="small" v-loading="loadingChart">
         <el-table-column prop="label" label="Месяц" width="100" />
@@ -139,13 +139,77 @@ onMounted(async () => {
 <style scoped>
 .stat-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(6, minmax(150px, 1fr));
   gap: 16px;
 }
-.stat-card { text-align: center; }
-.stat-label { font-size: 13px; color: #909399; margin-bottom: 8px; }
-.stat-value { font-size: 28px; font-weight: 700; color: #303133; }
-.stat-sub { font-size: 13px; color: #909399; margin-top: 4px; }
-.income { color: #67c23a !important; }
-.expense { color: #f56c6c !important; }
+.stat-card {
+  position: relative;
+  min-height: 128px;
+  overflow: hidden;
+}
+.stat-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--app-accent);
+  content: "";
+}
+.accent-income::before,
+.accent-profit::before {
+  background: var(--app-success);
+}
+.accent-expense::before,
+.accent-overdue::before {
+  background: var(--app-danger);
+}
+.stat-label {
+  margin-bottom: 12px;
+  color: var(--app-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.stat-value {
+  color: var(--app-text);
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.stat-sub {
+  margin-top: 8px;
+  color: var(--app-text-muted);
+  font-size: 13px;
+}
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+.panel-card {
+  height: 100%;
+}
+.monthly-panel {
+  margin-top: 18px;
+}
+.danger-title {
+  color: var(--app-danger);
+}
+.income { color: var(--app-success) !important; }
+.expense { color: var(--app-danger) !important; }
+@media (max-width: 1280px) {
+  .stat-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 920px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .stat-cards {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

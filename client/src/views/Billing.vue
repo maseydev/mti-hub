@@ -176,5 +176,5 @@ onMounted(async () => {
 .toolbar-left { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 </style>
 <style>
-.row-overdue td { background: #fff2f0 !important; }
+.row-overdue td { background: rgba(255, 107, 107, 0.09) !important; }
 </style>

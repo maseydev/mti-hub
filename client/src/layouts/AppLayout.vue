@@ -5,10 +5,11 @@
       <header class="app-header">
         <div class="header-left">
           <h2 class="page-title">{{ pageTitle }}</h2>
+          <span class="page-kicker">Billing workspace</span>
         </div>
         <div class="header-right">
           <span class="user-name">{{ auth.user?.name }}</span>
-          <el-button link @click="handleLogout">Выйти</el-button>
+          <el-button class="logout-btn" link @click="handleLogout">Выйти</el-button>
         </div>
       </header>
       <main class="main-content">
@@ -59,7 +60,8 @@ onMounted(() => {
 .app-layout {
   display: flex;
   min-height: 100vh;
-  background: #f5f7fa;
+  background: var(--app-bg);
+  color: var(--app-text);
 }
 .main-wrapper {
   flex: 1;
@@ -68,22 +70,34 @@ onMounted(() => {
   overflow: hidden;
 }
 .app-header {
-  height: 56px;
-  background: #fff;
-  border-bottom: 1px solid #e4e7ed;
+  min-height: 68px;
+  background: rgba(11, 13, 16, 0.84);
+  border-bottom: 1px solid var(--app-border);
+  backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 12px 28px;
   position: sticky;
   top: 0;
   z-index: 10;
 }
+.header-left {
+  min-width: 0;
+}
 .page-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #303133;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 750;
+  color: var(--app-text);
   margin: 0;
+}
+.page-kicker {
+  display: block;
+  margin-top: 4px;
+  color: var(--app-text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
 }
 .header-right {
   display: flex;
@@ -91,12 +105,30 @@ onMounted(() => {
   gap: 12px;
 }
 .user-name {
-  color: #606266;
+  max-width: 220px;
+  overflow: hidden;
+  color: var(--app-text-soft);
   font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.logout-btn {
+  color: var(--app-text-muted) !important;
 }
 .main-content {
   flex: 1;
-  padding: 24px;
+  padding: 28px;
   overflow-y: auto;
+}
+@media (max-width: 900px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  .app-header {
+    padding: 14px 16px;
+  }
+  .main-content {
+    padding: 16px;
+  }
 }
 </style>

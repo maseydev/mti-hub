@@ -1,7 +1,11 @@
 <template>
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <span class="logo-text">MTI-HUB</span>
+      <span class="logo-mark">M</span>
+      <div>
+        <span class="logo-text">MTI-HUB</span>
+        <span class="logo-subtitle">studio finance</span>
+      </div>
     </div>
     <el-menu
       :default-active="route.path"
@@ -56,41 +60,90 @@ const route = useRoute()
 
 <style scoped>
 .sidebar {
-  width: 220px;
+  width: 264px;
   min-height: 100vh;
-  background: #001529;
+  background: #0f1217;
+  border-right: 1px solid var(--app-border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
 }
 .sidebar-logo {
-  height: 56px;
+  min-height: 68px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid #0d2137;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--app-border);
+}
+.logo-mark {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid rgba(53, 194, 164, 0.42);
+  border-radius: 8px;
+  background: var(--app-accent-soft);
+  color: var(--app-accent-strong);
+  font-weight: 800;
 }
 .logo-text {
-  color: #409eff;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 1px;
+  display: block;
+  color: var(--app-text);
+  font-size: 17px;
+  line-height: 1.1;
+  font-weight: 800;
+}
+.logo-subtitle {
+  display: block;
+  margin-top: 3px;
+  color: var(--app-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
 }
 .sidebar-menu {
   background: transparent !important;
   border-right: none !important;
   flex: 1;
+  padding: 12px;
 }
 :deep(.el-menu-item) {
-  color: #ffffffa0 !important;
+  height: 42px;
+  margin: 3px 0;
+  border-radius: 8px;
+  color: var(--app-text-muted) !important;
+  font-weight: 650;
+}
+:deep(.el-menu-item .el-icon) {
+  color: #7d8a9b;
 }
 :deep(.el-menu-item:hover),
 :deep(.el-menu-item.is-active) {
-  background: #1890ff20 !important;
-  color: #409eff !important;
+  background: var(--app-accent-soft) !important;
+  color: var(--app-text) !important;
+}
+:deep(.el-menu-item.is-active .el-icon) {
+  color: var(--app-accent-strong);
 }
 :deep(.el-divider) {
-  border-color: #0d2137 !important;
-  margin: 8px 0;
+  border-color: var(--app-border) !important;
+  margin: 10px 0;
+}
+@media (max-width: 900px) {
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+  }
+  .sidebar-menu {
+    display: flex;
+    overflow-x: auto;
+    padding: 10px;
+  }
+  :deep(.el-menu-item) {
+    flex: 0 0 auto;
+  }
+  :deep(.el-divider) {
+    display: none;
+  }
 }
 </style>
