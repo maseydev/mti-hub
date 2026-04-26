@@ -57,6 +57,36 @@ const ensureCanManage = (note, ctx) => {
   if (note.createdById !== ctx.userId) throw new ForbiddenError('Недостаточно прав');
 };
 
+const validateLinkedEntities = async ({ clientId, projectId }) => {
+  if (!clientId || !projectId) return;
+
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { clientId: true },
+  });
+  if (!project) throw new NotFoundError('Проект не найден');
+  if (project.clientId !== clientId) {
+    throw new AppError('Проект не принадлежит выбранному клиенту', 422);
+  }
+};
+
+const ensureMemberCanUseLinks = async ({ clientId, projectId }, ctx) => {
+  await validateLinkedEntities({ clientId, projectId });
+  if (isManager(ctx.role)) return;
+
+  if (clientId && !projectId) {
+    throw new ForbiddenError('Недостаточно прав');
+  }
+
+  if (!projectId) return;
+
+  const task = await prisma.task.findFirst({
+    where: { projectId, assigneeId: ctx.userId },
+    select: { id: true },
+  });
+  if (!task) throw new ForbiddenError('Недостаточно прав');
+};
+
 const buildWhere = (filters = {}, ctx) => {
   const where = {};
   if (filters.q) {
@@ -99,12 +129,16 @@ const create = async (data, ctx) => {
   const parsed = noteSchema.safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
 
+  const clientId = parsed.data.clientId || null;
+  const projectId = parsed.data.projectId || null;
+  await ensureMemberCanUseLinks({ clientId, projectId }, ctx);
+
   return prisma.note.create({
     data: {
       title: parsed.data.title,
       content: parsed.data.content || '',
-      clientId: parsed.data.clientId || null,
-      projectId: parsed.data.projectId || null,
+      clientId,
+      projectId,
       isPinned: parsed.data.isPinned || false,
       isArchived: parsed.data.isArchived || false,
       createdById: ctx.userId,
@@ -119,6 +153,10 @@ const update = async (id, data, ctx) => {
 
   const parsed = noteSchema.partial().safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
+
+  const nextClientId = parsed.data.clientId !== undefined ? parsed.data.clientId || null : note.clientId;
+  const nextProjectId = parsed.data.projectId !== undefined ? parsed.data.projectId || null : note.projectId;
+  await ensureMemberCanUseLinks({ clientId: nextClientId, projectId: nextProjectId }, ctx);
 
   return prisma.note.update({
     where: { id },

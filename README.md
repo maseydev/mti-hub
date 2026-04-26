@@ -23,7 +23,13 @@ docker compose up --build
 Фронтенд: http://localhost  
 API health: http://localhost:5000/health
 
-**Логин по умолчанию:** `admin@studio.ru` / `admin123`
+Чтобы создать стартового администратора и базовые справочники, один раз выполните:
+
+```bash
+docker compose run --rm server node prisma/seed.js
+```
+
+**Логин после seed:** `admin@studio.ru` / `admin123`
 
 > ⚠️ Смените пароль после первого входа
 
