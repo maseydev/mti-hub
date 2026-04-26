@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  VIEWER
+}
+
+enum ClientStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum ProjectStatus {
+  ACTIVE
+  PAUSED
+  FINISHED
+  ARCHIVED
+}
+
+enum ServiceType {
+  HOSTING
+  DOMAIN
+  MAINTENANCE
+  SERVER
+  LICENSE
+  SUPPORT
+  OTHER
+}
+
+enum BillingCycle {
+  MONTHLY
+  QUARTERLY
+  SEMI_YEARLY
+  YEARLY
+}
+
+enum ServiceStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  ARCHIVED
+}
+
+enum BillingStatus {
+  PLANNED
+  DUE
+  OVERDUE
+  PAID
+  CANCELLED
+}
+
+enum BillingSource {
+  MANUAL
+  SERVICE_AUTO
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum AccountType {
+  CASH
+  BANK
+  CARD
+  CRYPTO
+  OTHER
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(OWNER)
+  locale       String   @default("ru")
+  currency     String   @default("RUB")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Client {
+  id          String       @id @default(cuid())
+  name        String
+  contactName String?
+  email       String?
+  phone       String?
+  telegram    String?
+  companyName String?
+  taxId       String?
+  notes       String?
+  status      ClientStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  projects     Project[]
+  services     Service[]
+  billingItems BillingItem[]
+  transactions Transaction[]
+}
+
+model Project {
+  id            String        @id @default(cuid())
+  clientId      String
+  name          String
+  description   String?
+  status        ProjectStatus @default(ACTIVE)
+  startDate     DateTime?
+  endDate       DateTime?
+  repositoryUrl String?
+  productionUrl String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  client       Client        @relation(fields: [clientId], references: [id])
+  services     Service[]
+  billingItems BillingItem[]
+  transactions Transaction[]
+}
+
+model Service {
+  id               String        @id @default(cuid())
+  clientId         String
+  projectId        String?
+  title            String
+  description      String?
+  type             ServiceType
+  billingCycle     BillingCycle
+  amount           Decimal       @db.Decimal(12, 2)
+  currency         String        @default("RUB")
+  nextDueDate      DateTime
+  startDate        DateTime?
+  endDate          DateTime?
+  autoCreateIncome Boolean       @default(true)
+  status           ServiceStatus @default(ACTIVE)
+  notes            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  client           Client            @relation(fields: [clientId], references: [id])
+  project          Project?          @relation(fields: [projectId], references: [id])
+  billingItems     BillingItem[]
+  transactions     Transaction[]
+  notificationLogs NotificationLog[]
+}
+
+model BillingItem {
+  id        String        @id @default(cuid())
+  clientId  String
+  projectId String?
+  serviceId String?
+  title     String
+  amount    Decimal       @db.Decimal(12, 2)
+  currency  String        @default("RUB")
+  dueDate   DateTime
+  paidAt    DateTime?
+  status    BillingStatus @default(PLANNED)
+  source    BillingSource @default(MANUAL)
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  client           Client            @relation(fields: [clientId], references: [id])
+  project          Project?          @relation(fields: [projectId], references: [id])
+  service          Service?          @relation(fields: [serviceId], references: [id])
+  transaction      Transaction?
+  notificationLogs NotificationLog[]
+
+  @@unique([serviceId, dueDate])
+}
+
+model Transaction {
+  id            String          @id @default(cuid())
+  type          TransactionType
+  amount        Decimal         @db.Decimal(12, 2)
+  currency      String          @default("RUB")
+  date          DateTime
+  categoryId    String?
+  clientId      String?
+  projectId     String?
+  serviceId     String?
+  billingItemId String?         @unique
+  accountId     String?
+  description   String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  category    Category?    @relation(fields: [categoryId], references: [id])
+  client      Client?      @relation(fields: [clientId], references: [id])
+  project     Project?     @relation(fields: [projectId], references: [id])
+  service     Service?     @relation(fields: [serviceId], references: [id])
+  billingItem BillingItem? @relation(fields: [billingItemId], references: [id])
+  account     Account?     @relation(fields: [accountId], references: [id])
+}
+
+model Category {
+  id        String          @id @default(cuid())
+  name      String
+  type      TransactionType
+  color     String?
+  isSystem  Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  transactions Transaction[]
+}
+
+model Account {
+  id             String      @id @default(cuid())
+  name           String
+  type           AccountType
+  currency       String      @default("RUB")
+  openingBalance Decimal     @default(0) @db.Decimal(12, 2)
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  transactions Transaction[]
+}
+
+model TelegramSettings {
+  id                     String   @id @default(cuid())
+  chatId                 String?
+  isEnabled              Boolean  @default(false)
+  reminderDaysBefore     Json     @default("[7,3,1,0]")
+  overdueReminderEnabled Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model NotificationLog {
+  id            String             @id @default(cuid())
+  reminderType  String
+  serviceId     String?
+  billingItemId String?
+  sentAt        DateTime           @default(now())
+  channel       String             @default("TELEGRAM")
+  status        NotificationStatus
+  errorMessage  String?
+
+  service     Service?     @relation(fields: [serviceId], references: [id])
+  billingItem BillingItem? @relation(fields: [billingItemId], references: [id])
+}
