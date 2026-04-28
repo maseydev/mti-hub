@@ -119,7 +119,7 @@
           class="flex w-full items-center gap-4 px-4 py-3 text-left transition hover:bg-slate-800/35"
           @click="toggleProject(group.id)"
         >
-          <ChevronRight v-if="collapsedProjects[group.id]" class="size-5 flex-none text-slate-500" />
+          <ChevronRight v-if="isProjectCollapsed(group.id)" class="size-5 flex-none text-slate-500" />
           <ChevronDown v-else class="size-5 flex-none text-slate-500" />
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2">
@@ -154,43 +154,41 @@
           </div>
         </div>
 
-        <div v-if="!collapsedProjects[group.id]" class="border-t border-slate-800">
+        <div v-if="!isProjectCollapsed(group.id)" class="border-t border-slate-800">
           <div
             v-for="row in group.tasks"
             :key="row.id"
-            class="grid gap-3 border-b border-slate-800/80 px-4 py-3 last:border-b-0 hover:bg-slate-800/30 lg:grid-cols-[minmax(0,1fr)_140px_145px_115px_110px]"
+            class="flex flex-col gap-3 border-b border-slate-800/80 px-4 py-3 last:border-b-0 hover:bg-slate-800/30 xl:flex-row xl:items-center xl:justify-between"
             :class="isOverdue(row) ? 'bg-red-950/15' : ''"
           >
-            <div class="flex min-w-0 gap-3">
+            <div class="flex min-w-0 flex-1 gap-3">
               <span class="mt-1 h-9 w-1 flex-none rounded-full" :class="priorityAccent(row.priority)" />
               <div class="min-w-0">
                 <div class="truncate font-medium text-slate-100">{{ row.title }}</div>
-                <div class="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
+                <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <span>{{ row.assignee?.name || 'Без исполнителя' }}</span>
+                  <StatusBadge :status="row.status" domain="task" />
+                  <StatusBadge :status="row.priority" domain="priority" />
                   <span>Старт {{ fmtDate(row.plannedStart) }}</span>
                   <span>Конец {{ fmtDate(row.plannedEnd) }}</span>
+                  <span class="ui-number" :class="isOverdue(row) ? 'font-semibold text-rose-300' : 'text-slate-500'">Дедлайн {{ fmtDate(row.dueDate) }}</span>
                 </div>
               </div>
             </div>
-            <div class="text-sm text-slate-300">{{ row.assignee?.name || '—' }}</div>
-            <div><StatusBadge :status="row.status" domain="task" /></div>
-            <div><StatusBadge :status="row.priority" domain="priority" /></div>
-            <div class="flex items-center justify-between gap-2">
-              <span class="ui-number" :class="isOverdue(row) ? 'font-semibold text-rose-300' : 'text-slate-300'">{{ fmtDate(row.dueDate) }}</span>
-              <div class="flex gap-1">
-                <select
-                  class="ui-select w-28 py-1 text-xs"
-                  :value="row.status"
-                  @change="changeStatus(row.id, $event.target.value)"
-                >
-                  <option v-for="[val, lbl] in STATUS_OPTIONS" :key="val" :value="val">{{ lbl }}</option>
-                </select>
-                <button v-if="auth.isAdminOrManager" class="ui-button ui-button-ghost px-2 py-1" type="button" @click="openEdit(row)">
-                  <Pencil class="size-4" />
-                </button>
-                <button v-if="auth.isAdminOrManager" class="ui-button ui-button-danger px-2 py-1" type="button" @click="remove(row.id)">
-                  <Trash2 class="size-4" />
-                </button>
-              </div>
+            <div class="flex flex-wrap items-center gap-1 xl:flex-none">
+              <select
+                class="ui-select w-32 py-1 text-xs"
+                :value="row.status"
+                @change="changeStatus(row.id, $event.target.value)"
+              >
+                <option v-for="[val, lbl] in STATUS_OPTIONS" :key="val" :value="val">{{ lbl }}</option>
+              </select>
+              <button v-if="auth.isAdminOrManager" class="ui-button ui-button-ghost px-2 py-1" type="button" @click="openEdit(row)">
+                <Pencil class="size-4" />
+              </button>
+              <button v-if="auth.isAdminOrManager" class="ui-button ui-button-danger px-2 py-1" type="button" @click="remove(row.id)">
+                <Trash2 class="size-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -241,8 +239,9 @@ const loading = ref(false)
 const dialogVisible = ref(false)
 const editingTask = ref(null)
 const filters = reactive({ projectId: '', assigneeId: '', status: '', priority: '', overdue: false })
+const TASKS_COLLAPSED_KEY = 'tasksCollapsedProjects:v2'
 const viewMode = ref(localStorage.getItem('tasksViewMode') || 'table')
-const collapsedProjects = reactive(JSON.parse(localStorage.getItem('tasksCollapsedProjects') || '{}'))
+const collapsedProjects = reactive(JSON.parse(localStorage.getItem(TASKS_COLLAPSED_KEY) || '{}'))
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('ru-RU') : '—'
 const isOverdue = (row) => {
@@ -310,12 +309,11 @@ const groupedProjects = computed(() => {
   })
 })
 
-const toggleProject = (id) => {
-  collapsedProjects[id] = !collapsedProjects[id]
-}
+const isProjectCollapsed = (id) => collapsedProjects[id] ?? true
+const toggleProject = (id) => { collapsedProjects[id] = !isProjectCollapsed(id) }
 
 watch(viewMode, (value) => localStorage.setItem('tasksViewMode', value))
-watch(collapsedProjects, (value) => localStorage.setItem('tasksCollapsedProjects', JSON.stringify(value)), { deep: true })
+watch(collapsedProjects, (value) => localStorage.setItem(TASKS_COLLAPSED_KEY, JSON.stringify(value)), { deep: true })
 
 const load = async () => {
   loading.value = true
