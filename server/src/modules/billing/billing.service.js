@@ -96,8 +96,16 @@ const markPaid = async (id, body = {}) => {
   await prisma.$transaction(async (tx) => {
     await tx.billingItem.update({ where: { id }, data: { status: 'PAID', paidAt } });
 
+    const service = item.serviceId
+      ? await tx.service.findUnique({
+        where: { id: item.serviceId },
+        select: { nextDueDate: true, billingCycle: true, autoCreateIncome: true },
+      })
+      : null;
+    const shouldCreateIncome = !item.serviceId || service?.autoCreateIncome;
+
     const existingTx = await tx.transaction.findUnique({ where: { billingItemId: id } });
-    if (!existingTx) {
+    if (!existingTx && shouldCreateIncome) {
       await tx.transaction.create({
         data: {
           type: 'INCOME',
@@ -113,12 +121,9 @@ const markPaid = async (id, body = {}) => {
       });
     }
 
-    if (item.serviceId) {
-      const service = await tx.service.findUnique({ where: { id: item.serviceId } });
-      if (service) {
-        const newNextDueDate = addCycleToDate(service.nextDueDate, service.billingCycle);
-        await tx.service.update({ where: { id: item.serviceId }, data: { nextDueDate: newNextDueDate } });
-      }
+    if (item.serviceId && service) {
+      const newNextDueDate = addCycleToDate(service.nextDueDate, service.billingCycle);
+      await tx.service.update({ where: { id: item.serviceId }, data: { nextDueDate: newNextDueDate } });
     }
   });
 
