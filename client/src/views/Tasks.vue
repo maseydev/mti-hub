@@ -22,12 +22,32 @@
           <input v-model="filters.overdue" type="checkbox" @change="load" /> Просроченные
         </label>
       </div>
-      <button v-if="auth.isAdminOrManager" class="ui-button ui-button-primary" type="button" @click="openCreate">
-        <Plus class="size-4" /> Добавить задачу
-      </button>
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="inline-flex rounded-md border border-slate-700 bg-slate-950 p-1">
+          <button
+            class="rounded px-3 py-1.5 text-sm font-semibold"
+            :class="viewMode === 'table' ? 'bg-blue-400 text-slate-950' : 'text-slate-400 hover:text-slate-100'"
+            type="button"
+            @click="viewMode = 'table'"
+          >
+            Таблица
+          </button>
+          <button
+            class="rounded px-3 py-1.5 text-sm font-semibold"
+            :class="viewMode === 'projects' ? 'bg-blue-400 text-slate-950' : 'text-slate-400 hover:text-slate-100'"
+            type="button"
+            @click="viewMode = 'projects'"
+          >
+            По проектам
+          </button>
+        </div>
+        <button v-if="auth.isAdminOrManager" class="ui-button ui-button-primary" type="button" @click="openCreate">
+          <Plus class="size-4" /> Добавить задачу
+        </button>
+      </div>
     </div>
 
-    <div class="ui-table-wrap">
+    <div v-if="viewMode === 'table'" class="ui-table-wrap">
       <div class="ui-table-scroll">
         <table class="ui-table">
           <thead>
@@ -89,6 +109,95 @@
       <div v-if="!tasks.length && !loading" class="ui-empty m-5">Задачи не найдены</div>
     </div>
 
+    <div v-else class="space-y-3">
+      <section
+        v-for="group in groupedProjects"
+        :key="group.id"
+        class="overflow-hidden rounded-lg border border-slate-800/80 bg-slate-900/70"
+      >
+        <div
+          class="flex w-full items-center gap-4 px-4 py-3 text-left transition hover:bg-slate-800/35"
+          @click="toggleProject(group.id)"
+        >
+          <ChevronRight v-if="collapsedProjects[group.id]" class="size-5 flex-none text-slate-500" />
+          <ChevronDown v-else class="size-5 flex-none text-slate-500" />
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <router-link
+                v-if="group.id !== 'no-project'"
+                :to="`/projects/${group.id}`"
+                class="truncate text-base font-semibold text-slate-100 hover:text-sky-300"
+                @click.stop
+              >
+                {{ group.name }}
+              </router-link>
+              <span v-else class="truncate text-base font-semibold text-slate-100">{{ group.name }}</span>
+              <span class="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-400">{{ group.tasks.length }} задач</span>
+            </div>
+            <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              <span>{{ group.clientName }}</span>
+              <span>TODO {{ group.counts.todo }}</span>
+              <span>В работе {{ group.counts.inProgress }}</span>
+              <span>Готово {{ group.counts.done }}</span>
+              <span :class="group.counts.overdue ? 'font-semibold text-rose-300' : ''">Просрочено {{ group.counts.overdue }}</span>
+              <span v-if="group.counts.unassigned">Без исполнителя {{ group.counts.unassigned }}</span>
+            </div>
+          </div>
+          <div class="hidden w-36 flex-none sm:block">
+            <div class="mb-1 flex justify-between text-xs text-slate-500">
+              <span>Прогресс</span>
+              <span>{{ group.progress }}%</span>
+            </div>
+            <div class="h-1.5 overflow-hidden rounded-full bg-slate-800">
+              <div class="h-full rounded-full bg-teal-300" :style="{ width: `${group.progress}%` }" />
+            </div>
+          </div>
+        </div>
+
+        <div v-if="!collapsedProjects[group.id]" class="border-t border-slate-800">
+          <div
+            v-for="row in group.tasks"
+            :key="row.id"
+            class="grid gap-3 border-b border-slate-800/80 px-4 py-3 last:border-b-0 hover:bg-slate-800/30 lg:grid-cols-[minmax(0,1fr)_140px_145px_115px_110px]"
+            :class="isOverdue(row) ? 'bg-red-950/15' : ''"
+          >
+            <div class="flex min-w-0 gap-3">
+              <span class="mt-1 h-9 w-1 flex-none rounded-full" :class="priorityAccent(row.priority)" />
+              <div class="min-w-0">
+                <div class="truncate font-medium text-slate-100">{{ row.title }}</div>
+                <div class="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
+                  <span>Старт {{ fmtDate(row.plannedStart) }}</span>
+                  <span>Конец {{ fmtDate(row.plannedEnd) }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-sm text-slate-300">{{ row.assignee?.name || '—' }}</div>
+            <div><StatusBadge :status="row.status" domain="task" /></div>
+            <div><StatusBadge :status="row.priority" domain="priority" /></div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="ui-number" :class="isOverdue(row) ? 'font-semibold text-rose-300' : 'text-slate-300'">{{ fmtDate(row.dueDate) }}</span>
+              <div class="flex gap-1">
+                <select
+                  class="ui-select w-28 py-1 text-xs"
+                  :value="row.status"
+                  @change="changeStatus(row.id, $event.target.value)"
+                >
+                  <option v-for="[val, lbl] in STATUS_OPTIONS" :key="val" :value="val">{{ lbl }}</option>
+                </select>
+                <button v-if="auth.isAdminOrManager" class="ui-button ui-button-ghost px-2 py-1" type="button" @click="openEdit(row)">
+                  <Pencil class="size-4" />
+                </button>
+                <button v-if="auth.isAdminOrManager" class="ui-button ui-button-danger px-2 py-1" type="button" @click="remove(row.id)">
+                  <Trash2 class="size-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div v-if="!groupedProjects.length && !loading" class="ui-empty">Задачи не найдены</div>
+    </div>
+
     <TaskFormModal
       :visible="dialogVisible"
       :task="editingTask"
@@ -101,8 +210,8 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
-import { Pencil, Plus, Trash2 } from 'lucide-vue-next'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import { tasksApi } from '@/api/tasks'
 import { projectsApi } from '@/api/projects'
 import { teamApi } from '@/api/team'
@@ -132,12 +241,81 @@ const loading = ref(false)
 const dialogVisible = ref(false)
 const editingTask = ref(null)
 const filters = reactive({ projectId: '', assigneeId: '', status: '', priority: '', overdue: false })
+const viewMode = ref(localStorage.getItem('tasksViewMode') || 'table')
+const collapsedProjects = reactive(JSON.parse(localStorage.getItem('tasksCollapsedProjects') || '{}'))
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('ru-RU') : '—'
 const isOverdue = (row) => {
   if (!row.dueDate || ['DONE', 'CANCELLED'].includes(row.status)) return false
   return new Date(row.dueDate) < new Date()
 }
+const priorityAccent = (priority) => ({
+  HIGH: 'bg-rose-400',
+  MEDIUM: 'bg-blue-400',
+  LOW: 'bg-slate-500',
+}[priority] || 'bg-slate-500')
+
+const statusRank = (status) => ({
+  IN_PROGRESS: 0,
+  TODO: 1,
+  DONE: 3,
+  CANCELLED: 4,
+}[status] ?? 2)
+
+const sortedTasks = (rows) => [...rows].sort((a, b) => {
+  const overdueDiff = Number(isOverdue(b)) - Number(isOverdue(a))
+  if (overdueDiff) return overdueDiff
+  const statusDiff = statusRank(a.status) - statusRank(b.status)
+  if (statusDiff) return statusDiff
+  const aDue = a.dueDate ? new Date(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER
+  const bDue = b.dueDate ? new Date(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER
+  return aDue - bDue
+})
+
+const groupedProjects = computed(() => {
+  const map = new Map()
+  for (const task of tasks.value) {
+    const id = task.project?.id || task.projectId || 'no-project'
+    if (!map.has(id)) {
+      map.set(id, {
+        id,
+        name: task.project?.name || 'Без проекта',
+        clientName: task.project?.client?.name || 'Клиент не указан',
+        tasks: [],
+      })
+    }
+    map.get(id).tasks.push(task)
+  }
+
+  return [...map.values()].map((group) => {
+    const done = group.tasks.filter(t => t.status === 'DONE').length
+    const activeTotal = group.tasks.filter(t => t.status !== 'CANCELLED').length || group.tasks.length || 1
+    const counts = {
+      todo: group.tasks.filter(t => t.status === 'TODO').length,
+      inProgress: group.tasks.filter(t => t.status === 'IN_PROGRESS').length,
+      done,
+      overdue: group.tasks.filter(isOverdue).length,
+      unassigned: group.tasks.filter(t => !t.assigneeId).length,
+    }
+    return {
+      ...group,
+      tasks: sortedTasks(group.tasks),
+      counts,
+      progress: Math.round((done / activeTotal) * 100),
+    }
+  }).sort((a, b) => {
+    if (b.counts.overdue !== a.counts.overdue) return b.counts.overdue - a.counts.overdue
+    if (b.counts.inProgress !== a.counts.inProgress) return b.counts.inProgress - a.counts.inProgress
+    return a.name.localeCompare(b.name, 'ru')
+  })
+})
+
+const toggleProject = (id) => {
+  collapsedProjects[id] = !collapsedProjects[id]
+}
+
+watch(viewMode, (value) => localStorage.setItem('tasksViewMode', value))
+watch(collapsedProjects, (value) => localStorage.setItem('tasksCollapsedProjects', JSON.stringify(value)), { deep: true })
 
 const load = async () => {
   loading.value = true
