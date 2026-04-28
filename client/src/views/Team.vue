@@ -60,7 +60,7 @@
       <div v-if="!filtered.length && !loading" class="ui-empty m-5">Участники не найдены</div>
     </div>
 
-    <div v-if="dialogVisible" class="ui-modal-backdrop" @click.self="dialogVisible = false">
+    <div v-if="dialogVisible" class="ui-modal-backdrop">
       <section class="ui-modal max-w-xl">
         <header class="ui-modal-header">
           <h2 class="ui-modal-title">{{ editingId ? 'Редактировать участника' : 'Новый участник' }}</h2>

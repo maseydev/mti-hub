@@ -62,7 +62,7 @@
       <div v-if="!items.length && !loading" class="ui-empty m-5">Платежи не найдены</div>
     </div>
 
-    <div v-if="dialogVisible" class="ui-modal-backdrop" @click.self="dialogVisible = false">
+    <div v-if="dialogVisible" class="ui-modal-backdrop">
       <section class="ui-modal max-w-xl">
         <header class="ui-modal-header">
           <h2 class="ui-modal-title">Новый ожидаемый платёж</h2>
@@ -78,7 +78,7 @@
           </label>
           <label><span class="ui-label">Название *</span><input v-model="form.title" class="ui-input" /></label>
           <div class="grid gap-4 sm:grid-cols-2">
-            <label><span class="ui-label">Сумма *</span><input v-model.number="form.amount" class="ui-input" min="0.01" step="0.01" type="number" /></label>
+            <label><span class="ui-label">Сумма *</span><MoneyInput v-model="form.amount" /></label>
             <label><span class="ui-label">Дата оплаты *</span><AppDatePicker v-model="form.dueDate" :clearable="false" /></label>
           </div>
           <label><span class="ui-label">Заметки</span><textarea v-model="form.notes" class="ui-textarea" /></label>
@@ -101,6 +101,7 @@ import { billingApi } from '@/api/billing'
 import { clientsApi } from '@/api/clients'
 import StatusBadge from '@/components/StatusBadge.vue'
 import AppDatePicker from '@/components/AppDatePicker.vue'
+import MoneyInput from '@/components/MoneyInput.vue'
 import { confirmAction, notify } from '@/utils/notify'
 
 const items = ref([])

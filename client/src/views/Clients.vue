@@ -54,7 +54,7 @@
       <div v-if="!clients.length && !loading" class="ui-empty m-5">Клиенты не найдены</div>
     </div>
 
-    <div v-if="dialogVisible" class="ui-modal-backdrop" @click.self="dialogVisible = false">
+    <div v-if="dialogVisible" class="ui-modal-backdrop">
       <section class="ui-modal">
         <header class="ui-modal-header">
           <h2 class="ui-modal-title">{{ editingId ? 'Редактировать клиента' : 'Новый клиент' }}</h2>

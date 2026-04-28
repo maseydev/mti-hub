@@ -62,7 +62,7 @@
       <div v-if="!services.length && !loading" class="ui-empty m-5">Регулярные услуги не найдены</div>
     </div>
 
-    <div v-if="dialogVisible" class="ui-modal-backdrop" @click.self="dialogVisible = false">
+    <div v-if="dialogVisible" class="ui-modal-backdrop">
       <section class="ui-modal">
         <header class="ui-modal-header">
           <h2 class="ui-modal-title">{{ editingId ? 'Редактировать регулярную услугу' : 'Новая регулярная услуга' }}</h2>
@@ -90,7 +90,7 @@
                 <option v-for="[val,lbl] in CYCLE_OPTIONS" :key="val" :value="val">{{ lbl }}</option>
               </select>
             </label>
-            <label><span class="ui-label">Сумма *</span><input v-model.number="form.amount" class="ui-input" min="0.01" step="0.01" type="number" /></label>
+            <label><span class="ui-label">Сумма *</span><MoneyInput v-model="form.amount" /></label>
             <label><span class="ui-label">Следующая оплата *</span><AppDatePicker v-model="form.nextDueDate" :clearable="false" /></label>
             <label>
               <span class="ui-label">Статус</span>
@@ -122,6 +122,7 @@ import { servicesApi } from '@/api/services'
 import { clientsApi } from '@/api/clients'
 import StatusBadge from '@/components/StatusBadge.vue'
 import AppDatePicker from '@/components/AppDatePicker.vue'
+import MoneyInput from '@/components/MoneyInput.vue'
 import { confirmAction, notify } from '@/utils/notify'
 
 const TYPE_OPTIONS = [['HOSTING','Хостинг'],['DOMAIN','Домен'],['MAINTENANCE','Обслуживание'],['SERVER','Сервер'],['LICENSE','Лицензия'],['SUPPORT','Поддержка'],['OTHER','Прочее']]

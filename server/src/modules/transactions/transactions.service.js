@@ -14,6 +14,7 @@ const txSchema = z.object({
   projectId: z.string().optional().nullable(),
   serviceId: z.string().optional().nullable(),
   accountId: z.string().optional().nullable(),
+  teamMemberId: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
 });
 
@@ -22,6 +23,18 @@ const include = {
   client: { select: { id: true, name: true } },
   project: { select: { id: true, name: true } },
   account: { select: { id: true, name: true } },
+  teamMember: { select: { id: true, name: true, email: true, position: true } },
+};
+
+const ensureTeamMemberCanBeLinked = async (teamMemberId) => {
+  if (!teamMemberId) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: teamMemberId },
+    select: { id: true, isActive: true },
+  });
+  if (!user) throw new NotFoundError('Участник команды не найден');
+  if (!user.isActive) throw new AppError('Нельзя привязать деактивированного участника команды', 422);
+  return user;
 };
 
 const getAll = async (filters = {}) => {
@@ -29,6 +42,7 @@ const getAll = async (filters = {}) => {
   if (filters.type) where.type = filters.type;
   if (filters.clientId) where.clientId = filters.clientId;
   if (filters.projectId) where.projectId = filters.projectId;
+  if (filters.teamMemberId) where.teamMemberId = filters.teamMemberId;
   if (filters.categoryId) where.categoryId = filters.categoryId;
   if (filters.accountId) where.accountId = filters.accountId;
   if (filters.dateFrom || filters.dateTo) {
@@ -51,6 +65,7 @@ const create = async (data) => {
   const { amount, date, ...rest } = parsed.data;
   await ensureClientCanBeLinked(prisma, rest.clientId);
   await ensureProjectCanBeLinked(prisma, rest.projectId, rest.clientId);
+  await ensureTeamMemberCanBeLinked(rest.teamMemberId);
   return prisma.transaction.create({
     data: { ...rest, amount: new Decimal(amount), date: new Date(date) },
     include,
@@ -67,6 +82,9 @@ const update = async (id, data) => {
   if (nextProjectId !== current.projectId || nextClientId !== current.clientId) {
     await ensureClientCanBeLinked(prisma, nextClientId);
     await ensureProjectCanBeLinked(prisma, nextProjectId, nextClientId);
+  }
+  if (rest.teamMemberId !== undefined && rest.teamMemberId !== current.teamMemberId) {
+    await ensureTeamMemberCanBeLinked(rest.teamMemberId);
   }
   return prisma.transaction.update({
     where: { id },

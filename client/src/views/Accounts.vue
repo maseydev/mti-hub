@@ -39,7 +39,7 @@
       <div v-if="!accounts.length && !loading" class="ui-empty m-5">Кошельки не найдены</div>
     </div>
 
-    <div v-if="dialogVisible" class="ui-modal-backdrop" @click.self="dialogVisible = false">
+    <div v-if="dialogVisible" class="ui-modal-backdrop">
       <section class="ui-modal max-w-lg">
         <header class="ui-modal-header">
           <h2 class="ui-modal-title">{{ editingId ? 'Редактировать кошелёк' : 'Новый кошелёк' }}</h2>
@@ -54,7 +54,7 @@
             </select>
           </label>
           <label><span class="ui-label">Валюта</span><input v-model="form.currency" class="ui-input" maxlength="3" /></label>
-          <label><span class="ui-label">Начальный баланс</span><input v-model.number="form.openingBalance" class="ui-input" step="0.01" type="number" /></label>
+          <label><span class="ui-label">Начальный баланс</span><MoneyInput v-model="form.openingBalance" allow-negative /></label>
           <label class="flex items-end gap-2 pb-2 text-sm text-slate-300"><input v-model="form.isActive" type="checkbox" /> Активен</label>
         </div>
         <footer class="ui-modal-footer">
@@ -70,6 +70,7 @@
 import { onMounted, ref } from 'vue'
 import { Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import { accountsApi } from '@/api/accounts'
+import MoneyInput from '@/components/MoneyInput.vue'
 import { confirmAction, notify } from '@/utils/notify'
 
 const TYPE_OPTIONS = [['CASH','Наличные'],['BANK','Банк'],['CARD','Карта'],['CRYPTO','Крипто'],['OTHER','Прочее']]

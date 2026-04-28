@@ -1,5 +1,5 @@
 <template>
-  <div v-if="visible" class="ui-modal-backdrop" @click.self="$emit('close')">
+  <div v-if="visible" class="ui-modal-backdrop">
     <section class="ui-modal max-w-2xl">
       <header class="ui-modal-header">
         <h2 class="ui-modal-title">{{ task ? 'Редактировать задачу' : 'Новая задача' }}</h2>

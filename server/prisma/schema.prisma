@@ -121,6 +121,7 @@ model User {
   assignedTasks Task[] @relation("TaskAssignee")
   createdTasks  Task[] @relation("TaskCreator")
   notes         Note[] @relation("NoteCreator")
+  teamTransactions Transaction[] @relation("TransactionTeamMember")
 }
 
 model Client {
@@ -229,6 +230,7 @@ model Transaction {
   serviceId     String?
   billingItemId String?         @unique
   accountId     String?
+  teamMemberId  String?
   description   String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -239,6 +241,9 @@ model Transaction {
   service     Service?     @relation(fields: [serviceId], references: [id])
   billingItem BillingItem? @relation(fields: [billingItemId], references: [id])
   account     Account?     @relation(fields: [accountId], references: [id])
+  teamMember  User?        @relation("TransactionTeamMember", fields: [teamMemberId], references: [id])
+
+  @@index([teamMemberId])
 }
 
 model Category {

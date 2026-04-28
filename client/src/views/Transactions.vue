@@ -15,6 +15,10 @@
           <option value="">Категория</option>
           <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
+        <select v-model="filters.teamMemberId" class="ui-select w-48" @change="load">
+          <option value="">Участник</option>
+          <option v-for="m in activeMembers" :key="m.id" :value="m.id">{{ m.name }}</option>
+        </select>
         <AppDatePicker v-model="filters.dateFrom" class="w-40" placeholder="От" @change="load" />
         <AppDatePicker v-model="filters.dateTo" class="w-40" placeholder="До" @change="load" />
       </div>
@@ -25,7 +29,7 @@
       <div class="ui-table-scroll">
         <table class="ui-table">
           <thead>
-            <tr><th>Дата</th><th>Описание</th><th>Тип</th><th>Сумма</th><th>Категория</th><th>Клиент</th><th>Кошелёк</th><th></th></tr>
+            <tr><th>Дата</th><th>Описание</th><th>Тип</th><th>Сумма</th><th>Категория</th><th>Клиент</th><th>Участник</th><th>Кошелёк</th><th></th></tr>
           </thead>
           <tbody>
             <tr v-for="row in transactions" :key="row.id">
@@ -40,6 +44,7 @@
                 <span v-else class="text-slate-500">—</span>
               </td>
               <td>{{ row.client?.name || '—' }}</td>
+              <td>{{ row.teamMember?.name || '—' }}</td>
               <td>{{ row.account?.name || '—' }}</td>
               <td class="text-right">
                 <button v-if="!row.billingItemId" class="ui-button ui-button-danger px-2" type="button" @click="remove(row.id)"><Trash2 class="size-4" /></button>
@@ -51,7 +56,7 @@
       <div v-if="!transactions.length && !loading" class="ui-empty m-5">Транзакции не найдены</div>
     </div>
 
-    <div v-if="dialogVisible" class="ui-modal-backdrop" @click.self="dialogVisible = false">
+    <div v-if="dialogVisible" class="ui-modal-backdrop">
       <section class="ui-modal max-w-xl">
         <header class="ui-modal-header">
           <h2 class="ui-modal-title">Новая транзакция</h2>
@@ -62,11 +67,11 @@
             <div class="sm:col-span-2">
               <span class="ui-label">Тип *</span>
               <div class="inline-flex rounded-md border border-slate-700 bg-slate-950 p-1">
-                <button class="rounded px-3 py-1.5 text-sm font-semibold" :class="form.type === 'INCOME' ? 'bg-sky-500 text-slate-950' : 'text-slate-400'" type="button" @click="form.type = 'INCOME'">Доход</button>
-                <button class="rounded px-3 py-1.5 text-sm font-semibold" :class="form.type === 'EXPENSE' ? 'bg-sky-500 text-slate-950' : 'text-slate-400'" type="button" @click="form.type = 'EXPENSE'">Расход</button>
+                <button class="rounded px-3 py-1.5 text-sm font-semibold" :class="form.type === 'INCOME' ? 'bg-sky-500 text-slate-950' : 'text-slate-400'" type="button" @click="setType('INCOME')">Доход</button>
+                <button class="rounded px-3 py-1.5 text-sm font-semibold" :class="form.type === 'EXPENSE' ? 'bg-sky-500 text-slate-950' : 'text-slate-400'" type="button" @click="setType('EXPENSE')">Расход</button>
               </div>
             </div>
-            <label><span class="ui-label">Сумма *</span><input v-model.number="form.amount" class="ui-input" min="0.01" step="0.01" type="number" /></label>
+            <label><span class="ui-label">Сумма *</span><MoneyInput v-model="form.amount" /></label>
             <label><span class="ui-label">Дата *</span><AppDatePicker v-model="form.date" :clearable="false" /></label>
             <label class="sm:col-span-2"><span class="ui-label">Описание</span><input v-model="form.description" class="ui-input" /></label>
             <label>
@@ -90,6 +95,13 @@
                 <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
               </select>
             </label>
+            <label v-if="form.type === 'EXPENSE'">
+              <span class="ui-label">Выплата участнику</span>
+              <select v-model="form.teamMemberId" class="ui-select" @change="applyTeamMemberExpense">
+                <option :value="null">Без участника</option>
+                <option v-for="m in activeMembers" :key="m.id" :value="m.id">{{ m.name }}</option>
+              </select>
+            </label>
           </div>
         </div>
         <footer class="ui-modal-footer">
@@ -108,22 +120,26 @@ import { transactionsApi } from '@/api/transactions'
 import { clientsApi } from '@/api/clients'
 import { categoriesApi } from '@/api/categories'
 import { accountsApi } from '@/api/accounts'
+import { teamApi } from '@/api/team'
 import StatusBadge from '@/components/StatusBadge.vue'
 import AppDatePicker from '@/components/AppDatePicker.vue'
+import MoneyInput from '@/components/MoneyInput.vue'
 import { confirmAction, notify } from '@/utils/notify'
 
 const transactions = ref([])
 const clients = ref([])
 const categories = ref([])
 const accounts = ref([])
+const members = ref([])
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
-const filters = reactive({ type: '', clientId: '', categoryId: '', dateFrom: '', dateTo: '' })
+const filters = reactive({ type: '', clientId: '', categoryId: '', teamMemberId: '', dateFrom: '', dateTo: '' })
 
-const empty = () => ({ type: 'INCOME', amount: 0, date: '', description: '', categoryId: null, accountId: null, clientId: null })
+const empty = () => ({ type: 'INCOME', amount: 0, date: '', description: '', categoryId: null, accountId: null, clientId: null, teamMemberId: null })
 const form = ref(empty())
 const filteredCategories = computed(() => categories.value.filter(c => c.type === form.value.type))
+const activeMembers = computed(() => members.value.filter(m => m.isActive))
 
 const fmt = (v) => Number(v || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₽'
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('ru-RU') : '—'
@@ -131,10 +147,29 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('ru-RU') : '—'
 const load = async () => {
   loading.value = true
   try {
-    const p = { type: filters.type || undefined, clientId: filters.clientId || undefined, categoryId: filters.categoryId || undefined, dateFrom: filters.dateFrom || undefined, dateTo: filters.dateTo || undefined }
+    const p = { type: filters.type || undefined, clientId: filters.clientId || undefined, categoryId: filters.categoryId || undefined, teamMemberId: filters.teamMemberId || undefined, dateFrom: filters.dateFrom || undefined, dateTo: filters.dateTo || undefined }
     const res = await transactionsApi.getAll(p)
     transactions.value = res.data.data
   } finally { loading.value = false }
+}
+
+const setType = (type) => {
+  form.value.type = type
+  form.value.categoryId = null
+  if (type !== 'EXPENSE') form.value.teamMemberId = null
+}
+
+const findContractorCategory = () =>
+  categories.value.find(c => c.type === 'EXPENSE' && c.name.toLowerCase().includes('подряд'))
+
+const applyTeamMemberExpense = () => {
+  const member = activeMembers.value.find(m => m.id === form.value.teamMemberId)
+  if (!member) return
+  const contractorCategory = findContractorCategory()
+  if (!form.value.categoryId && contractorCategory) form.value.categoryId = contractorCategory.id
+  if (!form.value.description?.trim()) {
+    form.value.description = `Выплата: ${member.name}`
+  }
 }
 
 const openCreate = (type) => { form.value = { ...empty(), type, date: new Date().toISOString().slice(0, 10) }; dialogVisible.value = true }
@@ -160,9 +195,10 @@ const remove = async (id) => {
 }
 
 onMounted(async () => {
-  const [, cr, catr, acr] = await Promise.all([load(), clientsApi.getAll({ status: 'ACTIVE' }), categoriesApi.getAll(), accountsApi.getAll()])
+  const [, cr, catr, acr, mr] = await Promise.all([load(), clientsApi.getAll({ status: 'ACTIVE' }), categoriesApi.getAll(), accountsApi.getAll(), teamApi.getAll()])
   clients.value = cr.data.data
   categories.value = catr.data.data
   accounts.value = acr.data.data
+  members.value = mr.data.data
 })
 </script>
