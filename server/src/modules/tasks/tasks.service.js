@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const prisma = require('../../config/prisma');
 const { NotFoundError, AppError, ForbiddenError } = require('../../utils/errors');
+const { ensureProjectCanBeLinked } = require('../../utils/projects');
 
 const STATUSES = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'];
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'];
@@ -104,6 +105,7 @@ const create = async (data, ctx = {}) => {
   const parsed = createSchema.safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
   const { plannedStart, plannedEnd, dueDate, ...rest } = parsed.data;
+  await ensureProjectCanBeLinked(prisma, rest.projectId);
   return prisma.task.create({
     data: {
       ...rest,

@@ -3,6 +3,7 @@ const { Decimal } = require('@prisma/client/runtime/library');
 const prisma = require('../../config/prisma');
 const { NotFoundError, AppError } = require('../../utils/errors');
 const { today, addCycleToDate, monthNameRu } = require('../../utils/dates');
+const { ensureProjectCanBeLinked } = require('../../utils/projects');
 
 const itemInclude = {
   client: { select: { id: true, name: true } },
@@ -49,6 +50,7 @@ const createItem = async (data) => {
   const parsed = itemSchema.safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
   const { amount, dueDate, ...rest } = parsed.data;
+  await ensureProjectCanBeLinked(prisma, rest.projectId, rest.clientId);
   const due = new Date(dueDate);
   const now = today();
   let status = 'PLANNED';
@@ -62,10 +64,15 @@ const createItem = async (data) => {
 };
 
 const updateItem = async (id, data) => {
-  await getItemById(id);
+  const current = await getItemById(id);
   const parsed = itemSchema.partial().safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
   const { amount, dueDate, ...rest } = parsed.data;
+  const nextProjectId = rest.projectId === undefined ? current.projectId : rest.projectId;
+  const nextClientId = rest.clientId === undefined ? current.clientId : rest.clientId;
+  if (nextProjectId !== current.projectId || nextClientId !== current.clientId) {
+    await ensureProjectCanBeLinked(prisma, nextProjectId, nextClientId);
+  }
   return prisma.billingItem.update({
     where: { id },
     data: {

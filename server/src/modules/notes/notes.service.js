@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const prisma = require('../../config/prisma');
 const { AppError, ForbiddenError, NotFoundError } = require('../../utils/errors');
+const { ensureProjectCanBeLinked } = require('../../utils/projects');
 
 const MANAGER_ROLES = ['ADMIN', 'OWNER', 'MANAGER'];
 
@@ -58,6 +59,7 @@ const ensureCanManage = (note, ctx) => {
 };
 
 const validateLinkedEntities = async ({ clientId, projectId }) => {
+  await ensureProjectCanBeLinked(prisma, projectId, clientId);
   if (!clientId || !projectId) return;
 
   const project = await prisma.project.findUnique({

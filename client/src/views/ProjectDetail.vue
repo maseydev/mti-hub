@@ -47,7 +47,7 @@
         <div class="ui-card">
           <div class="ui-card-header flex items-center justify-between">
             <span>Задачи <span class="ml-2 text-xs text-slate-500">{{ tasks.length }}</span></span>
-            <button class="ui-button ui-button-primary py-1.5 text-xs" type="button" @click="openCreate">
+            <button v-if="project.status !== 'ARCHIVED'" class="ui-button ui-button-primary py-1.5 text-xs" type="button" @click="openCreate">
               <Plus class="size-4" /> Добавить задачу
             </button>
           </div>

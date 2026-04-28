@@ -182,7 +182,7 @@ const remove = async (id) => {
 onMounted(async () => {
   const promises = [load()]
   if (auth.isAdminOrManager) {
-    promises.push(projectsApi.getAll(), teamApi.getAll())
+    promises.push(projectsApi.getAll({ status: 'ACTIVE' }), teamApi.getAll())
   }
   const [, pr, mr] = await Promise.allSettled(promises)
   if (pr?.status === 'fulfilled') projects.value = pr.value.data.data
