@@ -2,7 +2,7 @@ const { z } = require('zod');
 const { Decimal } = require('@prisma/client/runtime/library');
 const prisma = require('../../config/prisma');
 const { NotFoundError, AppError } = require('../../utils/errors');
-const { ensureProjectCanBeLinked } = require('../../utils/projects');
+const { ensureClientCanBeLinked, ensureProjectCanBeLinked } = require('../../utils/projects');
 
 const serviceSchema = z.object({
   clientId: z.string().min(1, 'Укажите клиента'),
@@ -62,6 +62,7 @@ const create = async (data) => {
   const parsed = serviceSchema.safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
   const { amount, nextDueDate, startDate, endDate, ...rest } = parsed.data;
+  await ensureClientCanBeLinked(prisma, rest.clientId);
   await ensureProjectCanBeLinked(prisma, rest.projectId, rest.clientId);
   return prisma.service.create({
     data: {
@@ -83,6 +84,7 @@ const update = async (id, data) => {
   const nextProjectId = rest.projectId === undefined ? current.projectId : rest.projectId;
   const nextClientId = rest.clientId === undefined ? current.clientId : rest.clientId;
   if (nextProjectId !== current.projectId || nextClientId !== current.clientId) {
+    await ensureClientCanBeLinked(prisma, nextClientId);
     await ensureProjectCanBeLinked(prisma, nextProjectId, nextClientId);
   }
   return prisma.service.update({

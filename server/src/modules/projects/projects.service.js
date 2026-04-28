@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const prisma = require('../../config/prisma');
 const { NotFoundError, AppError } = require('../../utils/errors');
+const { ensureClientCanBeLinked } = require('../../utils/projects');
 
 const projectSchema = z.object({
   clientId: z.string().min(1, 'Укажите клиента'),
@@ -45,6 +46,7 @@ const create = async (data) => {
   const parsed = projectSchema.safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
   const { startDate, endDate, repositoryUrl, productionUrl, ...rest } = parsed.data;
+  await ensureClientCanBeLinked(prisma, rest.clientId);
   return prisma.project.create({
     data: {
       ...rest,
@@ -58,10 +60,14 @@ const create = async (data) => {
 };
 
 const update = async (id, data) => {
-  await getById(id);
+  const current = await getById(id);
   const parsed = projectSchema.partial().safeParse(data);
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
   const { startDate, endDate, repositoryUrl, productionUrl, ...rest } = parsed.data;
+  const nextClientId = rest.clientId === undefined ? current.clientId : rest.clientId;
+  if (nextClientId !== current.clientId) {
+    await ensureClientCanBeLinked(prisma, nextClientId);
+  }
   return prisma.project.update({
     where: { id },
     data: {

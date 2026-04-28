@@ -160,7 +160,7 @@ const remove = async (id) => {
 }
 
 onMounted(async () => {
-  const [, cr, catr, acr] = await Promise.all([load(), clientsApi.getAll(), categoriesApi.getAll(), accountsApi.getAll()])
+  const [, cr, catr, acr] = await Promise.all([load(), clientsApi.getAll({ status: 'ACTIVE' }), categoriesApi.getAll(), accountsApi.getAll()])
   clients.value = cr.data.data
   categories.value = catr.data.data
   accounts.value = acr.data.data
