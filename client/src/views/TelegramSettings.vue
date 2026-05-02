@@ -177,10 +177,26 @@ onMounted(async () => {
   }
 })
 
+const buildMySettingsPayload = () => ({
+  ...myForm.value,
+  telegramChatId: myForm.value.telegramChatId?.trim() || null,
+})
+
+const persistMySettings = async () => {
+  const res = await telegramApi.updateMySettings(buildMySettingsPayload())
+  const updated = res.data.data
+  myForm.value = {
+    telegramChatId: updated.telegramChatId || '',
+    taskNotificationsEnabled: updated.taskNotificationsEnabled,
+    financeNotificationsEnabled: updated.financeNotificationsEnabled,
+  }
+  return updated
+}
+
 const saveMySettings = async () => {
   savingMe.value = true
   try {
-    await telegramApi.updateMySettings({ ...myForm.value, telegramChatId: myForm.value.telegramChatId || null })
+    await persistMySettings()
     notify.success('Настройки сохранены')
   } catch (err) { notify.error(err.response?.data?.error || 'Ошибка') }
   finally { savingMe.value = false }
@@ -210,11 +226,12 @@ const saveBot = async (type) => {
 }
 
 const testBotType = async (type) => {
-  const chatId = myForm.value.telegramChatId
+  const chatId = myForm.value.telegramChatId?.trim()
   if (!chatId) return notify.error('Укажите ваш Chat ID в разделе «Мои уведомления» для теста')
   const isTask = type === 'TASK'
   if (isTask) testingBotTask.value = true; else testingBotFinance.value = true
   try {
+    await persistMySettings()
     await telegramApi.testBot(type, chatId)
     notify.success('Тестовое сообщение отправлено')
   } catch (err) { notify.error(err.response?.data?.error || 'Ошибка отправки') }

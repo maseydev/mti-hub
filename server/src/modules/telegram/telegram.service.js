@@ -143,6 +143,9 @@ const updateMySettings = async (userId, data, role) => {
   if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422);
 
   const updateData = { ...parsed.data };
+  if (Object.prototype.hasOwnProperty.call(updateData, 'telegramChatId')) {
+    updateData.telegramChatId = updateData.telegramChatId?.trim() || null;
+  }
   if (!ADMIN_ROLES.includes(role)) delete updateData.financeNotificationsEnabled;
 
   return prisma.user.update({
